@@ -1,5 +1,8 @@
 # Mapa Estelar RPG — guia para o Claude Code
 
+> Estado do projeto, decisões pendentes e próximas fases: veja `PLANNING.md`
+> (documento canônico de progresso).
+
 ## Sobre o projeto
 
 - Mapa estelar interativo e **editável** para uma campanha de RPG de mesa sci-fi,
