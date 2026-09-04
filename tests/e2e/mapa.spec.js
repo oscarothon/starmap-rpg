@@ -28,8 +28,11 @@ test("mostra corpos celestes e geopolítica de Sol", async ({ page }) => {
   await expect(painel.locator(".aviso")).toContainText("Autoridade Solar Conjunta");
 
   await painel.locator('[data-aba="sistema"]').click();
-  await expect(painel.locator(".corpo").filter({ hasText: "Terra" })).toBeVisible();
-  await expect(painel.locator(".corpo").filter({ hasText: "Lua" })).toHaveClass(/corpo--lua/);
+  // Pelo nome exato: "Terra" também aparece na tag "Terraformação parcial" de Marte.
+  await expect(painel.locator(".corpo__nome", { hasText: /^Terra$/ })).toBeVisible();
+  await expect(painel.locator('.corpo:has(.corpo__nome:text-is("Lua"))')).toHaveClass(
+    /corpo--lua/
+  );
 
   await painel.locator('[data-aba="geopolitica"]').click();
   await expect(painel.locator(".equilibrio__fatia")).toHaveCount(2);

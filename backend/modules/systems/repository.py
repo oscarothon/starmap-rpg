@@ -46,30 +46,35 @@ BODIES = Table(
     order_by="orbital_order, id",
 )
 
+# Limites de coordenada e população: o mapa é finito e a população é uma
+# estimativa de ambientação — valores absurdos só servem para quebrar a tela.
+LIMITE_COORDENADA = 1_000_000
+LIMITE_POPULACAO = 10**15
+
 SYSTEM_FIELDS = (
-    ("name", v.text, {"max_length": 120}),
+    ("name", v.text, {"max_length": v.TEXTO_CURTO}),
     ("region_id", v.reference, {"default": None}),
-    ("x", v.number, {"default": 0}),
-    ("y", v.number, {"default": 0}),
+    ("x", v.number, {"default": 0, "minimum": -LIMITE_COORDENADA, "maximum": LIMITE_COORDENADA}),
+    ("y", v.number, {"default": 0, "minimum": -LIMITE_COORDENADA, "maximum": LIMITE_COORDENADA}),
     ("star_type", v.text, {"default": "", "allow_empty": True, "max_length": 80}),
     ("star_count", v.integer, {"default": 1, "minimum": 1, "maximum": 12}),
-    ("lore_text", v.text, {"default": "", "allow_empty": True}),
-    ("notice_text", v.text, {"default": "", "allow_empty": True}),
+    ("lore_text", v.text, {"default": "", "allow_empty": True, "max_length": v.TEXTO_LONGO}),
+    ("notice_text", v.text, {"default": "", "allow_empty": True, "max_length": v.TEXTO_MEDIO}),
     ("sovereign_faction_id", v.reference, {"default": None}),
-    ("population", v.integer, {"default": 0, "minimum": 0}),
+    ("population", v.integer, {"default": 0, "minimum": 0, "maximum": LIMITE_POPULACAO}),
     ("is_classified", v.boolean, {"default": 0}),
     *[(metric, v.integer, {"default": None, "minimum": 0, "maximum": 100}) for metric in METRICS],
 )
 
 BODY_FIELDS = (
-    ("name", v.text, {"max_length": 120}),
+    ("name", v.text, {"max_length": v.TEXTO_CURTO}),
     ("body_type", v.choice, {"options": BODY_TYPES, "default": "planet"}),
     ("parent_body_id", v.reference, {"default": None}),
-    ("orbital_order", v.integer, {"default": 0}),
-    ("orbital_radius_au", v.number, {"default": None, "minimum": 0}),
+    ("orbital_order", v.integer, {"default": 0, "minimum": -999, "maximum": 999}),
+    ("orbital_radius_au", v.number, {"default": None, "minimum": 0, "maximum": 1_000_000}),
     ("is_colonized", v.boolean, {"default": 0}),
-    ("description", v.text, {"default": "", "allow_empty": True}),
-    ("colony_notes", v.text, {"default": "", "allow_empty": True}),
+    ("description", v.text, {"default": "", "allow_empty": True, "max_length": v.TEXTO_LONGO}),
+    ("colony_notes", v.text, {"default": "", "allow_empty": True, "max_length": v.TEXTO_MEDIO}),
 )
 
 parse_system = v.make_parser(SYSTEM_FIELDS)

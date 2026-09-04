@@ -54,7 +54,7 @@ test("recusa sistema sem nome e mostra o erro em português", async ({ page }) =
   const dialogo = page.locator("#dialogo-fundo");
   await dialogo.locator('[data-acao="salvar"]').click();
 
-  await expect(page.locator(".aviso-flutuante--erro")).toContainText("obrigatório");
+  await expect(page.locator(".aviso-flutuante--erro")).toContainText("Nome");
   await expect(dialogo).toBeVisible();
 });
 
@@ -88,7 +88,7 @@ test("conecta dois sistemas com a ferramenta de rota", async ({ page }) => {
     .locator("#grupo-sistemas .sistema", { hasText: "KEPLER ROTA" })
     .locator(".sistema__nucleo")
     .click();
-  await expect(page.locator(".aviso-flutuante")).toContainText("segundo sistema");
+  await expect(page.locator(".aviso-flutuante").last()).toContainText("segundo sistema");
 
   await page
     .locator("#grupo-sistemas .sistema", { hasText: "SOL" })

@@ -18,7 +18,7 @@ FIELDS = (
     ("system_b_id", v.reference, {}),
     ("lane_type", v.choice, {"options": LANE_TYPES, "default": "cosmic_string"}),
     ("bidirectional", v.boolean, {"default": 1}),
-    ("notes", v.text, {"default": "", "allow_empty": True}),
+    ("notes", v.text, {"default": "", "allow_empty": True, "max_length": v.TEXTO_MEDIO}),
 )
 
 parse = v.make_parser(FIELDS)

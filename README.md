@@ -50,6 +50,27 @@ A aplicação sobe em <http://127.0.0.1:5173>. O banco fica em `data/starmap.db`
 (configurável com a variável `DATABASE_PATH`) e as migrations são aplicadas
 sozinhas na subida.
 
+## Configuração e segurança
+
+Copie `.env.example` para `.env` e ajuste — o arquivo fica fora do Git. Nenhum
+segredo mora no código; em produção (`STARMAP_AMBIENTE=producao`) a ausência de
+`SECRET_KEY` impede a subida da aplicação, em vez de usar um valor padrão.
+
+Variáveis principais:
+
+| Variável | Para quê |
+|---|---|
+| `SECRET_KEY` | Assinatura de sessão. Obrigatória em produção. |
+| `DATABASE_PATH` | Caminho do SQLite (recusado se apontar para `static/`). |
+| `STARMAP_AMBIENTE` | `desenvolvimento` ou `producao`. |
+| `FLASK_DEBUG` | Debugger do Werkzeug. Mantenha `0` em qualquer servidor exposto. |
+| `STARMAP_SOMENTE_LEITURA` | `1` bloqueia toda escrita na API. |
+
+> **Antes de publicar:** a aplicação ainda **não tem autenticação** — quem
+> alcança o servidor pode editar e excluir tudo. Para deixar o mapa disponível
+> aos jogadores com segurança hoje, suba com `STARMAP_SOMENTE_LEITURA=1` e edite
+> localmente.
+
 ## Testes
 
 | Suíte | Comando |

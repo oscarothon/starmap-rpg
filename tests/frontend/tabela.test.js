@@ -46,7 +46,12 @@ describe("filtrar", () => {
   });
 
   it("busca por nome do sistema, sem diferenciar maiúsculas", () => {
-    expect(filtrar(SISTEMAS, { busca: "sol" }).map((s) => s.name)).toEqual(["Sol"]);
+    expect(filtrar(SISTEMAS, { busca: "ARCTUR" }).map((s) => s.name)).toEqual(["Arcturus"]);
+  });
+
+  it("casa o termo em qualquer campo, não só no nome", () => {
+    // "sol" aparece no nome de Sol e na região de Barnard (Subaglomerado Solar).
+    expect(filtrar(SISTEMAS, { busca: "sol" }).map((s) => s.name)).toEqual(["Sol", "Barnard"]);
   });
 
   it("busca também por região e soberania", () => {

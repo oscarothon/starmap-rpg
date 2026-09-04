@@ -20,12 +20,12 @@ REGIONS = Table(
 )
 
 FIELDS = (
-    ("name", v.text, {"max_length": 120}),
+    ("name", v.text, {"max_length": v.TEXTO_CURTO}),
     ("parent_id", v.reference, {"default": None}),
     ("level", v.choice, {"options": LEVELS, "default": "cluster"}),
-    ("description", v.text, {"default": "", "allow_empty": True}),
-    ("color_hex", v.text, {"default": "", "allow_empty": True, "max_length": 9}),
-    ("sort_order", v.integer, {"default": 0}),
+    ("description", v.text, {"default": "", "allow_empty": True, "max_length": v.TEXTO_LONGO}),
+    ("color_hex", v.color, {"default": ""}),
+    ("sort_order", v.integer, {"default": 0, "minimum": -9999, "maximum": 9999}),
 )
 
 parse = v.make_parser(FIELDS)

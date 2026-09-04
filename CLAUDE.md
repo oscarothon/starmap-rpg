@@ -55,6 +55,58 @@ Cenário de exemplo: `.venv/Scripts/python.exe -m backend.seed`.
 6. **Módulo de backend novo** → pasta em `backend/modules/`, blueprint em
    `routes.py`, e o nome em `FEATURE_MODULES` (`backend/modules/__init__.py`).
 
+## Diretrizes de segurança (valem para todo código novo)
+
+Regras definidas pelo dono do projeto. Ao escrever ou revisar código, trate
+cada item como requisito, não como sugestão.
+
+**Controle de versão e segredos**
+- Nenhum segredo no código: chaves, tokens, senhas e URIs de banco entram por
+  variável de ambiente (`backend/config.py`), com `.env` local fora do Git e
+  `.env.example` documentando cada variável.
+- Em produção (`STARMAP_AMBIENTE=producao`), segredo ausente é erro de
+  inicialização — nunca um valor padrão silencioso.
+- `.gitignore` bloqueia `.env*`, bancos (`*.db`, `*.sqlite*`, `data/`,
+  `backups/`), chaves (`*.pem`, `*.key`) e logs. Ao criar um tipo de arquivo
+  sensível novo, adicione a regra antes do primeiro commit.
+
+**Banco de dados**
+- Valores sempre como parâmetros ligados (`?`); nunca concatene entrada do
+  usuário em SQL.
+- Identificadores (tabela, coluna, ordenação) só de constantes do código —
+  `Table` (`modules/core/repository.py`) valida formato e lista de colunas, e
+  `list_all` recusa fragmentos `WHERE` com sinais de concatenação.
+- Busca textual usa `instr(lower(...), lower(?))`, não `LIKE`, para que `%` e
+  `_` digitados sejam texto e não curinga.
+- O banco nunca pode morar em pasta servida estaticamente (`config.py` recusa).
+- Ao migrar para um banco em rede: exigir TLS e usar um usuário sem privilégio
+  administrativo (só DML nas tabelas da aplicação).
+
+**Autenticação, autorização e sessões**
+- Ainda **não existe autenticação** — ver a seção de pendências abaixo.
+- Quando existir: hash de senha com Argon2id (ou bcrypt) e salt por usuário,
+  nunca hash simples; cookie de sessão com `HttpOnly`, `Secure` e
+  `SameSite=Lax`; token CSRF nas escritas; e verificação de autorização por
+  rota (não confie na interface esconder o botão).
+
+**Entradas e exceções**
+- Toda entrada passa pelos validadores de `modules/core/validation.py`, com
+  tipo, faixa e tamanho máximo declarados — inclusive campos de texto livre.
+- Valores que voltam para o HTML como cor ou URL usam `v.color` / `v.safe_url`
+  (impedem injeção de CSS e esquemas `javascript:`/`data:`).
+- No frontend, texto vai por `textContent`; **nunca** use `innerHTML` com dado
+  vindo da API.
+- Erro inesperado: log completo no servidor, resposta genérica ao cliente
+  (`{"erro": ...}`), sem stack trace nem caminho de arquivo. O handler global
+  está em `app.py` — não o contorne com `try/except` que devolve `str(erro)`.
+- `FLASK_DEBUG` fica desligado por padrão: o debugger do Werkzeug executa
+  código arbitrário pelo navegador.
+
+**Pendências conhecidas (avise antes de publicar)**
+- Sem autenticação: qualquer um que alcance o servidor pode criar, editar e
+  excluir tudo. Enquanto isso, `STARMAP_SOMENTE_LEITURA=1` trava as escritas.
+- Sem limite de requisições (rate limit) e sem backup automático do banco.
+
 ## Restrições importantes
 
 - **Não versione bancos**: `data/starmap.db` e `.tmp-e2e.db` estão no

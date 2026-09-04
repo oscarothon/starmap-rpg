@@ -2,11 +2,15 @@
 
 import { execFileSync } from "node:child_process";
 import { existsSync, unlinkSync } from "node:fs";
+import { resolve } from "node:path";
 
 export const CAMINHO_BANCO = ".tmp-e2e.db";
 
+/** Caminho absoluto do Python do venv (o cmd.exe não aceita "./" com barra normal). */
 export function pythonDoProjeto() {
-  return process.platform === "win32" ? ".venv/Scripts/python.exe" : ".venv/bin/python";
+  const relativo =
+    process.platform === "win32" ? ".venv\\Scripts\\python.exe" : ".venv/bin/python";
+  return resolve(process.cwd(), relativo);
 }
 
 export default function globalSetup() {

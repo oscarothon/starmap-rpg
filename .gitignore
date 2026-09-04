@@ -1,9 +1,26 @@
+# Segredos e configuração de ambiente (nunca versionar)
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+*.p12
+*.pfx
+secrets.json
+credentials.json
+.netrc
+
 # Banco de dados local (nunca versionar)
 *.db
 *.db-journal
 *.db-wal
 *.db-shm
+*.sqlite
+*.sqlite3
+*.sql.gz
+*.dump
 data/
+backups/
 
 # Python
 __pycache__/
@@ -27,6 +44,9 @@ Thumbs.db
 .vscode/
 *.swp
 
-# Temporários
+# Temporários e logs
 .tmp-e2e.db
 *.log
+logs/
+*.bak
+*.orig

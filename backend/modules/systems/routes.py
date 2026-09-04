@@ -31,9 +31,13 @@ def _parse_system(payload, partial=False):
 @blueprint.get("")
 def listar():
     conn = get_db()
-    search = (request.args.get("busca") or "").strip()
+    # `instr` em vez de LIKE: o termo do usuário não vira padrão de busca, então
+    # `%` e `_` digitados são texto comum, não curingas.
+    search = (request.args.get("busca") or "").strip()[: v.TEXTO_CURTO]
     if search:
-        rows = repo.SYSTEMS.list_all(conn, where="name LIKE ?", params=(f"%{search}%",))
+        rows = repo.SYSTEMS.list_all(
+            conn, where="instr(lower(name), lower(?)) > 0", params=(search,)
+        )
     else:
         rows = repo.SYSTEMS.list_all(conn)
     return jsonify([repo.summary(conn, row) for row in rows])
@@ -166,10 +170,8 @@ def _get_body(conn, system_id, body_id):
 
 
 def _tags_of(payload):
-    tags = payload.get("tags") or []
-    if not isinstance(tags, list):
-        raise v.ValidationError("As tags devem ser uma lista de textos.", "tags")
-    return [str(tag) for tag in tags]
+    """Tags validadas: lista de textos curtos, sem repetição e com teto."""
+    return v.tag_list(payload, "tags", default=[])
 
 
 def _body_payload(conn, system_id, body_id):

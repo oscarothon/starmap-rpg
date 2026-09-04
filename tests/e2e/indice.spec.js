@@ -49,7 +49,8 @@ test("colapsa e expande um grupo de região", async ({ page }) => {
 });
 
 test("clicar numa linha abre o sistema no mapa", async ({ page }) => {
-  await page.locator(".linha-sistema", { hasText: "SOL" }).first().click();
+  // Casar o nome exato: "sol" também aparece em "Subaglomerado Solar".
+  await page.locator(".celula-sistema", { hasText: /^Sol$/ }).click();
 
   await expect(page).toHaveURL(/\?sistema=\d+/);
   await expect(page.locator("#painel-sistema .painel-sistema__nome")).toHaveText("Sol");

@@ -18,12 +18,12 @@ FACTIONS = Table(
 )
 
 FIELDS = (
-    ("name", v.text, {"max_length": 120}),
+    ("name", v.text, {"max_length": v.TEXTO_CURTO}),
     ("short_name", v.text, {"default": "", "allow_empty": True, "max_length": 24}),
-    ("color_hex", v.text, {"default": "#8899aa", "allow_empty": True, "max_length": 9}),
-    ("flag_icon", v.text, {"default": "", "allow_empty": True, "max_length": 255}),
-    ("description", v.text, {"default": "", "allow_empty": True}),
-    ("sort_order", v.integer, {"default": 0}),
+    ("color_hex", v.color, {"default": "#8899aa"}),
+    ("flag_icon", v.safe_url, {"default": ""}),
+    ("description", v.text, {"default": "", "allow_empty": True, "max_length": v.TEXTO_LONGO}),
+    ("sort_order", v.integer, {"default": 0, "minimum": -9999, "maximum": 9999}),
 )
 
 parse = v.make_parser(FIELDS)
