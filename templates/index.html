@@ -1,0 +1,45 @@
+<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Índice de Sistemas</title>
+    <link rel="stylesheet" href="/static/css/theme.css" />
+    <link rel="stylesheet" href="/static/css/indice.css" />
+  </head>
+  <body class="pagina-indice">
+    <header class="indice__topo">
+      <div>
+        <h1 class="indice__titulo">Índice de Sistemas</h1>
+        <span class="rotulo" id="indice-resumo">carregando…</span>
+      </div>
+      <a class="botao" href="/">Voltar ao mapa · ESC</a>
+    </header>
+
+    <div class="indice__ferramentas painel">
+      <input
+        class="indice__busca"
+        id="campo-filtro"
+        type="text"
+        placeholder="Filtrar por sistema, região ou soberania…"
+        aria-label="Filtrar sistemas"
+      />
+      <button class="botao" id="botao-agrupar" type="button" aria-pressed="true">
+        Agrupar por região
+      </button>
+      <button class="botao" id="botao-limpar" type="button">Limpar filtros</button>
+    </div>
+
+    <div class="indice__faccoes" id="filtros-faccao"></div>
+
+    <div class="indice__tabela-area">
+      <table class="tabela" id="tabela-indice">
+        <thead id="cabecalho-indice"></thead>
+        <tbody id="corpo-indice"></tbody>
+      </table>
+      <div class="vazio" id="indice-vazio" hidden>Nenhum sistema corresponde ao filtro</div>
+    </div>
+
+    <script type="module" src="/static/js/indice.js"></script>
+  </body>
+</html>

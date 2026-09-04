@@ -1,0 +1,176 @@
+/* Índice de Sistemas: tabela densa, no mesmo tema do mapa. */
+
+.pagina-indice {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  padding: 14px 16px;
+  overflow: hidden;
+  background:
+    radial-gradient(ellipse at 20% 0%, rgba(24, 58, 74, 0.35), transparent 55%),
+    var(--cor-fundo-profundo);
+}
+
+.indice__topo {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid var(--cor-borda);
+}
+
+.indice__titulo {
+  font-size: 22px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--cor-texto-forte);
+}
+
+.indice__ferramentas {
+  display: flex;
+  gap: 8px;
+  margin: 12px 0 8px;
+  padding: 8px;
+}
+
+.indice__busca {
+  flex: 1;
+}
+
+.indice__faccoes {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-bottom: 10px;
+}
+
+.chip-faccao {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px;
+  font-family: var(--fonte-mono);
+  font-size: 10px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--cor-texto-fraco);
+  border: 1px solid var(--cor-borda);
+  border-radius: var(--raio);
+  background: rgba(9, 18, 14, 0.8);
+}
+
+.chip-faccao[aria-pressed="true"] {
+  color: var(--cor-texto-forte);
+  border-color: var(--cor-destaque-suave);
+  background: rgba(201, 230, 75, 0.12);
+}
+
+.chip-faccao__cor {
+  width: 9px;
+  height: 9px;
+}
+
+.indice__tabela-area {
+  flex: 1;
+  overflow: auto;
+  border: 1px solid var(--cor-borda);
+  background: rgba(6, 12, 9, 0.75);
+}
+
+.tabela {
+  width: 100%;
+  border-collapse: collapse;
+  font-family: var(--fonte-mono);
+  font-size: 11px;
+}
+
+.tabela thead th {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  padding: 8px 10px;
+  font-size: 9px;
+  font-weight: 400;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--cor-texto-fraco);
+  text-align: right;
+  white-space: nowrap;
+  background: var(--cor-painel-solido);
+  border-bottom: 1px solid var(--cor-borda);
+  cursor: pointer;
+  user-select: none;
+}
+
+.tabela thead th:first-child,
+.tabela thead th.coluna-texto {
+  text-align: left;
+}
+
+.tabela thead th[aria-sort]:not([aria-sort="none"]) {
+  color: var(--cor-destaque);
+}
+
+.tabela tbody td {
+  padding: 6px 10px;
+  text-align: right;
+  white-space: nowrap;
+  border-bottom: 1px solid rgba(44, 70, 52, 0.35);
+}
+
+.tabela tbody td.coluna-texto {
+  text-align: left;
+}
+
+.tabela tbody tr:hover td {
+  background: rgba(201, 230, 75, 0.07);
+}
+
+.linha-sistema {
+  cursor: pointer;
+}
+
+/* Especificidade acima de `.tabela tbody td`, que alinha à direita. */
+.tabela tbody tr.linha-grupo td {
+  padding-top: 10px;
+  text-align: left;
+  font-size: 11px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--cor-destaque);
+  background: rgba(20, 36, 26, 0.55);
+  cursor: pointer;
+}
+
+.linha-grupo__seta {
+  display: inline-block;
+  width: 12px;
+  color: var(--cor-texto-fraco);
+}
+
+.celula-sistema {
+  color: var(--cor-texto-forte);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.celula-soberania {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.celula-soberania__cor {
+  width: 8px;
+  height: 8px;
+}
+
+.marca-classificado {
+  color: var(--cor-perigo);
+  letter-spacing: 0.14em;
+}
+
+.vazio[hidden] {
+  display: none;
+}

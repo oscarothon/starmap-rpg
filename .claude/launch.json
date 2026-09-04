@@ -1,0 +1,11 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "starmap",
+      "runtimeExecutable": ".venv/Scripts/python.exe",
+      "runtimeArgs": ["wsgi.py"],
+      "port": 5173
+    }
+  ]
+}

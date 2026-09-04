@@ -1,0 +1,181 @@
+/* Tema base: terminal de inteligência sci-fi.
+   Tokens de cor e tipografia usados por todas as telas. */
+
+:root {
+  --cor-fundo: #05080a;
+  --cor-fundo-profundo: #020405;
+  --cor-painel: rgba(9, 18, 14, 0.94);
+  --cor-painel-solido: #0a1410;
+  --cor-painel-claro: rgba(18, 32, 24, 0.94);
+  --cor-borda: #2c4634;
+  --cor-borda-forte: #486b4f;
+  --cor-destaque: #c9e64b;
+  --cor-destaque-suave: #8fae3c;
+  --cor-texto: #cfe3d2;
+  --cor-texto-forte: #eaf6ea;
+  --cor-texto-fraco: #7d9382;
+  --cor-alerta: #e8b13a;
+  --cor-perigo: #e0574a;
+  --cor-sucesso: #6fd08c;
+  --cor-classificado: #7a2f2f;
+
+  --fonte-mono: "Consolas", "SF Mono", "Menlo", "DejaVu Sans Mono", monospace;
+  --fonte-titulo: "Segoe UI", "Inter", system-ui, sans-serif;
+
+  --raio: 2px;
+  --sombra-painel: 0 18px 48px rgba(0, 0, 0, 0.65);
+  --transicao: 120ms ease;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  height: 100%;
+  margin: 0;
+}
+
+body {
+  background: var(--cor-fundo);
+  color: var(--cor-texto);
+  font-family: var(--fonte-titulo);
+  font-size: 14px;
+  overflow: hidden;
+}
+
+h1,
+h2,
+h3 {
+  margin: 0;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+}
+
+button {
+  font-family: var(--fonte-mono);
+  color: inherit;
+  background: none;
+  border: none;
+  cursor: pointer;
+}
+
+a {
+  color: var(--cor-destaque);
+}
+
+/* --- Elementos compartilhados --------------------------------------------- */
+
+.rotulo {
+  font-family: var(--fonte-mono);
+  font-size: 10px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--cor-texto-fraco);
+}
+
+.painel {
+  background: var(--cor-painel);
+  border: 1px solid var(--cor-borda);
+  box-shadow: var(--sombra-painel);
+  backdrop-filter: blur(3px);
+}
+
+.botao {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  font-size: 11px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--cor-texto);
+  background: rgba(20, 36, 26, 0.9);
+  border: 1px solid var(--cor-borda);
+  border-radius: var(--raio);
+  transition: var(--transicao);
+}
+
+.botao:hover {
+  border-color: var(--cor-destaque-suave);
+  color: var(--cor-texto-forte);
+}
+
+.botao[aria-pressed="true"],
+.botao--ativo {
+  color: var(--cor-fundo-profundo);
+  background: var(--cor-destaque);
+  border-color: var(--cor-destaque);
+  font-weight: 700;
+}
+
+.botao--perigo:hover {
+  border-color: var(--cor-perigo);
+  color: var(--cor-perigo);
+}
+
+.botao--primario {
+  color: var(--cor-fundo-profundo);
+  background: var(--cor-destaque);
+  border-color: var(--cor-destaque);
+  font-weight: 700;
+}
+
+.campo {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin-bottom: 10px;
+}
+
+.campo > span {
+  font-family: var(--fonte-mono);
+  font-size: 10px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--cor-texto-fraco);
+}
+
+input[type="text"],
+input[type="number"],
+select,
+textarea {
+  padding: 6px 8px;
+  color: var(--cor-texto-forte);
+  font-family: var(--fonte-mono);
+  font-size: 12px;
+  background: rgba(4, 10, 7, 0.85);
+  border: 1px solid var(--cor-borda);
+  border-radius: var(--raio);
+}
+
+input:focus,
+select:focus,
+textarea:focus {
+  outline: none;
+  border-color: var(--cor-destaque-suave);
+}
+
+textarea {
+  min-height: 64px;
+  resize: vertical;
+}
+
+/* Barra de rolagem discreta, no tom do tema */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: rgba(0, 0, 0, 0.3);
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--cor-borda);
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--cor-borda-forte);
+}

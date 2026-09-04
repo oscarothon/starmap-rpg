@@ -1,0 +1,32 @@
+# Banco de dados local (nunca versionar)
+*.db
+*.db-journal
+*.db-wal
+*.db-shm
+data/
+
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+.pytest_cache/
+.coverage
+htmlcov/
+
+# Node / testes
+node_modules/
+test-results/
+playwright-report/
+.playwright/
+
+# Sistema operacional / editores
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+*.swp
+
+# Temporários
+.tmp-e2e.db
+*.log

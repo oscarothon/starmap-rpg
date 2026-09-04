@@ -1,0 +1,81 @@
+<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Mapa Estelar</title>
+    <link rel="stylesheet" href="/static/css/theme.css" />
+    <link rel="stylesheet" href="/static/css/mapa.css" />
+  </head>
+  <body>
+    <div class="palco" id="palco">
+      <canvas class="palco__camada" id="camada-heatmap"></canvas>
+      <svg class="palco__camada" id="camada-sistemas" aria-label="Mapa estelar">
+        <g id="mundo">
+          <g id="grupo-fundo"></g>
+          <g id="grupo-regioes"></g>
+          <g id="grupo-rotas"></g>
+          <g id="grupo-sistemas"></g>
+        </g>
+      </svg>
+    </div>
+
+    <aside class="painel-sistema painel" id="painel-sistema" hidden></aside>
+
+    <div class="atalhos-topo">
+      <a class="botao" href="/indice">Índice de sistemas</a>
+    </div>
+
+    <div class="barra-topo painel">
+      <div class="busca">
+        <input
+          class="busca__campo"
+          id="campo-busca"
+          type="text"
+          placeholder="Buscar sistemas"
+          autocomplete="off"
+          aria-label="Buscar sistemas"
+        />
+        <div class="busca__resultados painel" id="resultados-busca" hidden></div>
+      </div>
+      <button class="botao" id="botao-enquadrar" type="button" title="Enquadrar tudo (F)">
+        Enquadrar
+      </button>
+      <button class="botao" id="botao-camadas" type="button" title="Camadas">Camadas</button>
+    </div>
+
+    <div class="controles-zoom">
+      <button class="botao" id="botao-mais-zoom" type="button" aria-label="Aproximar">+</button>
+      <button class="botao" id="botao-menos-zoom" type="button" aria-label="Afastar">−</button>
+    </div>
+
+    <section class="painel-camadas painel" id="painel-camadas" hidden>
+      <div class="painel-camadas__titulo rotulo">Camadas</div>
+      <div id="lista-camadas"></div>
+    </section>
+
+    <div class="legenda painel" id="legenda" hidden></div>
+
+    <div class="barra-editor painel">
+      <button class="botao" id="botao-editor" type="button" aria-pressed="false" title="Modo editor (E)">
+        Modo editor
+      </button>
+      <div class="barra-editor__ferramentas" id="ferramentas-editor" hidden>
+        <button class="botao" type="button" data-ferramenta="novo-sistema" aria-pressed="false">
+          + Novo sistema
+        </button>
+        <button class="botao" type="button" data-ferramenta="conectar" aria-pressed="false">
+          Conectar sistemas
+        </button>
+      </div>
+    </div>
+
+    <div class="barra-status painel">
+      <span class="rotulo" id="status-sistemas">0 sistemas</span>
+      <span class="rotulo" id="status-rotas">0 rotas</span>
+      <span class="rotulo" id="status-faccoes">0 facções</span>
+    </div>
+
+    <script type="module" src="/static/js/mapa.js"></script>
+  </body>
+</html>

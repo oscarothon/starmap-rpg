@@ -1,0 +1,771 @@
+/* Tela do mapa estelar: palco, camadas, barras de ferramentas e painel lateral. */
+
+.palco {
+  position: fixed;
+  inset: 0;
+  background:
+    radial-gradient(ellipse at 30% 20%, rgba(24, 58, 74, 0.55), transparent 60%),
+    radial-gradient(ellipse at 75% 70%, rgba(58, 34, 74, 0.45), transparent 60%),
+    var(--cor-fundo-profundo);
+  overflow: hidden;
+  cursor: grab;
+}
+
+.palco--arrastando {
+  cursor: grabbing;
+}
+
+.palco--conectando {
+  cursor: crosshair;
+}
+
+.palco__camada {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+
+#camada-mapa-base {
+  opacity: 0.5;
+  filter: saturate(0.9);
+}
+
+#camada-heatmap {
+  pointer-events: none;
+}
+
+#camada-sistemas {
+  pointer-events: none; /* os nós reativam ponteiro individualmente */
+}
+
+/* --- Estrelas de fundo ---------------------------------------------------- */
+
+.estrela-fundo {
+  fill: #ffffff;
+}
+
+/* --- Rotas ---------------------------------------------------------------- */
+
+.rota {
+  stroke: rgba(160, 200, 180, 0.35);
+  stroke-width: 1;
+  fill: none;
+  pointer-events: stroke;
+  cursor: pointer;
+}
+
+.rota:hover {
+  stroke: var(--cor-destaque);
+  stroke-width: 2;
+}
+
+.rota--unstable {
+  stroke-dasharray: 4 4;
+  stroke: rgba(232, 177, 58, 0.5);
+}
+
+.rota--restricted {
+  stroke: rgba(224, 87, 74, 0.5);
+  stroke-dasharray: 1 5;
+}
+
+.rota--trade_route {
+  stroke: rgba(201, 230, 75, 0.45);
+}
+
+.rota--fantasma {
+  stroke: var(--cor-destaque);
+  stroke-dasharray: 5 5;
+  pointer-events: none;
+}
+
+/* --- Sistemas ------------------------------------------------------------- */
+
+.sistema {
+  pointer-events: auto;
+  cursor: pointer;
+}
+
+.sistema__nucleo {
+  fill: #e9f5df;
+  stroke: rgba(0, 0, 0, 0.6);
+  stroke-width: 0.5;
+}
+
+.sistema__halo {
+  fill: none;
+  stroke-width: 1.5;
+  opacity: 0.85;
+}
+
+.sistema__brilho {
+  opacity: 0.28;
+}
+
+.sistema__rotulo {
+  font-family: var(--fonte-mono);
+  font-size: 9px;
+  letter-spacing: 0.08em;
+  fill: var(--cor-texto);
+  paint-order: stroke;
+  stroke: rgba(0, 0, 0, 0.85);
+  stroke-width: 2.5px;
+  stroke-linejoin: round;
+  pointer-events: none;
+  user-select: none;
+}
+
+.sistema--selecionado .sistema__rotulo {
+  fill: var(--cor-destaque);
+  font-weight: 700;
+}
+
+.sistema--selecionado .sistema__nucleo {
+  fill: var(--cor-destaque);
+}
+
+.sistema--classificado .sistema__nucleo {
+  fill: var(--cor-classificado);
+}
+
+.sistema--alvo-conexao .sistema__nucleo {
+  fill: var(--cor-alerta);
+}
+
+.modo-editor .sistema {
+  cursor: move;
+}
+
+/* --- Rótulos de região ---------------------------------------------------- */
+
+.regiao__rotulo {
+  font-family: var(--fonte-mono);
+  letter-spacing: 0.42em;
+  fill: rgba(207, 227, 210, 0.34);
+  text-transform: uppercase;
+  pointer-events: none;
+  user-select: none;
+}
+
+/* --- Barra superior ------------------------------------------------------- */
+
+.barra-topo {
+  position: fixed;
+  top: 12px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px;
+  z-index: 20;
+}
+
+.busca {
+  position: relative;
+}
+
+.busca__campo {
+  width: 260px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.busca__resultados {
+  position: absolute;
+  top: calc(100% + 4px);
+  left: 0;
+  right: 0;
+  max-height: 260px;
+  overflow-y: auto;
+  z-index: 30;
+}
+
+.busca__resultado {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+  width: 100%;
+  padding: 6px 10px;
+  font-size: 11px;
+  text-align: left;
+  border-bottom: 1px solid rgba(44, 70, 52, 0.5);
+}
+
+.busca__resultado:hover,
+.busca__resultado--ativo {
+  background: rgba(201, 230, 75, 0.14);
+  color: var(--cor-texto-forte);
+}
+
+.busca__resultado span:last-child {
+  color: var(--cor-texto-fraco);
+  font-size: 10px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+/* --- Controles laterais --------------------------------------------------- */
+
+.controles-zoom {
+  position: fixed;
+  top: 12px;
+  right: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  z-index: 20;
+}
+
+.controles-zoom .botao {
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  font-size: 15px;
+}
+
+.painel-camadas {
+  position: fixed;
+  top: 56px;
+  right: 12px;
+  width: 210px;
+  padding: 10px 12px;
+  z-index: 20;
+}
+
+.painel-camadas[hidden] {
+  display: none;
+}
+
+.painel-camadas__titulo {
+  margin-bottom: 8px;
+  padding-bottom: 6px;
+  border-bottom: 1px solid var(--cor-borda);
+}
+
+.camada-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 4px 0;
+  font-family: var(--fonte-mono);
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  cursor: pointer;
+}
+
+.camada-item input {
+  accent-color: var(--cor-destaque);
+}
+
+/* --- Barra do editor ------------------------------------------------------ */
+
+.barra-editor {
+  position: fixed;
+  bottom: 12px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px;
+  z-index: 20;
+}
+
+.barra-editor__ferramentas {
+  display: flex;
+  gap: 6px;
+  padding-left: 6px;
+  margin-left: 2px;
+  border-left: 1px solid var(--cor-borda);
+}
+
+.barra-editor__ferramentas[hidden] {
+  display: none;
+}
+
+.barra-status {
+  position: fixed;
+  bottom: 14px;
+  left: 14px;
+  display: flex;
+  gap: 14px;
+  padding: 6px 10px;
+  z-index: 15;
+}
+
+/* --- Painel lateral do sistema -------------------------------------------- */
+
+.painel-sistema {
+  position: fixed;
+  top: 0;
+  left: 0;
+  bottom: 0;
+  width: 380px;
+  display: flex;
+  flex-direction: column;
+  z-index: 25;
+  border-right: 1px solid var(--cor-borda-forte);
+  transform: translateX(0);
+  transition: transform 160ms ease;
+}
+
+.painel-sistema[hidden] {
+  display: none;
+}
+
+.painel-sistema__topo {
+  padding: 14px 16px 12px;
+  border-bottom: 1px solid var(--cor-borda);
+  background: linear-gradient(180deg, rgba(30, 48, 34, 0.7), transparent);
+}
+
+.painel-sistema__fechar {
+  position: absolute;
+  top: 10px;
+  right: 12px;
+  font-size: 16px;
+  line-height: 1;
+  color: var(--cor-texto-fraco);
+}
+
+.painel-sistema__fechar:hover {
+  color: var(--cor-destaque);
+}
+
+.painel-sistema__nome {
+  margin: 6px 0 4px;
+  font-size: 26px;
+  letter-spacing: 0.02em;
+  color: var(--cor-texto-forte);
+  text-transform: uppercase;
+}
+
+.painel-sistema__caminho {
+  display: block;
+  margin-bottom: 8px;
+}
+
+.painel-sistema__lore {
+  margin: 8px 0 0;
+  font-size: 13px;
+  line-height: 1.45;
+  color: var(--cor-texto);
+}
+
+.painel-sistema__soberania {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.painel-sistema__bandeira {
+  width: 26px;
+  height: 16px;
+  border: 1px solid var(--cor-borda);
+}
+
+.abas {
+  display: flex;
+  border-bottom: 1px solid var(--cor-borda);
+}
+
+.aba {
+  flex: 1;
+  padding: 9px 4px;
+  font-size: 10px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--cor-texto-fraco);
+  border-bottom: 2px solid transparent;
+}
+
+.aba:hover {
+  color: var(--cor-texto);
+}
+
+.aba[aria-selected="true"] {
+  color: var(--cor-destaque);
+  border-bottom-color: var(--cor-destaque);
+  background: rgba(201, 230, 75, 0.07);
+}
+
+.painel-sistema__conteudo {
+  flex: 1;
+  padding: 14px 16px 20px;
+  overflow-y: auto;
+}
+
+.painel-sistema__rodape {
+  display: flex;
+  gap: 6px;
+  padding: 10px 12px;
+  border-top: 1px solid var(--cor-borda);
+  background: rgba(4, 10, 7, 0.6);
+}
+
+.painel-sistema__rodape[hidden] {
+  display: none;
+}
+
+.aviso {
+  padding: 8px 10px;
+  margin-bottom: 14px;
+  font-family: var(--fonte-mono);
+  font-size: 11px;
+  line-height: 1.5;
+  color: var(--cor-alerta);
+  text-transform: uppercase;
+  border: 1px solid rgba(232, 177, 58, 0.4);
+  background: rgba(232, 177, 58, 0.07);
+}
+
+.estatisticas {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(72px, 1fr));
+  gap: 1px;
+  margin-bottom: 16px;
+  background: var(--cor-borda);
+  border: 1px solid var(--cor-borda);
+}
+
+.estatistica {
+  padding: 8px 6px;
+  text-align: center;
+  background: var(--cor-painel-solido);
+}
+
+.estatistica__valor {
+  font-family: var(--fonte-mono);
+  font-size: 18px;
+  color: var(--cor-texto-forte);
+}
+
+.estatistica__rotulo {
+  margin-top: 2px;
+  font-size: 9px;
+}
+
+.secao__titulo {
+  margin: 18px 0 8px;
+  padding-bottom: 4px;
+  border-bottom: 1px solid var(--cor-borda);
+}
+
+/* Diagrama orbital */
+
+.orbital {
+  width: 100%;
+  height: 90px;
+  margin-bottom: 8px;
+}
+
+.orbital__estrela {
+  fill: var(--cor-alerta);
+}
+
+.orbital__corpo {
+  fill: #9fb6a4;
+  cursor: pointer;
+}
+
+.orbital__corpo--colonizado {
+  fill: var(--cor-destaque);
+}
+
+.orbital__linha {
+  stroke: rgba(160, 200, 180, 0.25);
+  stroke-width: 1;
+}
+
+/* Lista de corpos celestes */
+
+.corpo {
+  display: flex;
+  gap: 10px;
+  padding: 8px 0;
+  border-bottom: 1px solid rgba(44, 70, 52, 0.45);
+}
+
+.corpo--lua {
+  padding-left: 22px;
+}
+
+.corpo__marcador {
+  flex: none;
+  width: 10px;
+  height: 10px;
+  margin-top: 3px;
+  border: 1px solid var(--cor-borda-forte);
+  border-radius: 50%;
+  background: #7d9382;
+}
+
+.corpo--colonizado .corpo__marcador {
+  background: var(--cor-destaque);
+}
+
+.corpo__nome {
+  font-family: var(--fonte-mono);
+  font-size: 12px;
+  letter-spacing: 0.08em;
+  color: var(--cor-texto-forte);
+  text-transform: uppercase;
+}
+
+.corpo__tags {
+  margin-top: 2px;
+  font-size: 11px;
+  color: var(--cor-texto-fraco);
+}
+
+.corpo__acoes {
+  margin-left: auto;
+  display: flex;
+  gap: 4px;
+}
+
+.corpo__acoes .botao {
+  padding: 2px 6px;
+  font-size: 10px;
+}
+
+/* Geopolítica */
+
+.medidor {
+  margin-bottom: 14px;
+}
+
+.medidor__topo {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 4px;
+}
+
+.medidor__barra {
+  height: 8px;
+  background: rgba(4, 10, 7, 0.8);
+  border: 1px solid var(--cor-borda);
+}
+
+.medidor__preenchimento {
+  height: 100%;
+  background: var(--cor-destaque);
+}
+
+.equilibrio {
+  display: flex;
+  height: 12px;
+  margin-bottom: 16px;
+  border: 1px solid var(--cor-borda);
+}
+
+.equilibrio__fatia {
+  height: 100%;
+}
+
+.acesso-restrito {
+  padding: 24px 16px;
+  text-align: center;
+  font-family: var(--fonte-mono);
+  font-size: 11px;
+  letter-spacing: 0.24em;
+  color: rgba(224, 87, 74, 0.9);
+  text-transform: uppercase;
+  border: 1px solid rgba(224, 87, 74, 0.35);
+  background:
+    repeating-linear-gradient(
+      -45deg,
+      rgba(224, 87, 74, 0.09) 0 8px,
+      transparent 8px 16px
+    );
+}
+
+.vazio {
+  padding: 18px 0;
+  font-family: var(--fonte-mono);
+  font-size: 11px;
+  color: var(--cor-texto-fraco);
+  text-align: center;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+/* --- Legenda de camadas --------------------------------------------------- */
+
+.legenda {
+  position: fixed;
+  bottom: 60px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 6px 16px;
+  max-width: 620px;
+  padding: 8px 14px;
+  z-index: 18;
+}
+
+.legenda[hidden] {
+  display: none;
+}
+
+.legenda__item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-family: var(--fonte-mono);
+  font-size: 10px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.legenda__cor {
+  width: 10px;
+  height: 10px;
+}
+
+/* --- Diálogos ------------------------------------------------------------- */
+
+.dialogo-fundo {
+  position: fixed;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(2, 4, 5, 0.72);
+  z-index: 60;
+}
+
+.dialogo-fundo[hidden] {
+  display: none;
+}
+
+.dialogo {
+  width: min(440px, 92vw);
+  max-height: 86vh;
+  display: flex;
+  flex-direction: column;
+}
+
+.dialogo__topo {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 14px;
+  border-bottom: 1px solid var(--cor-borda);
+}
+
+.dialogo__titulo {
+  font-family: var(--fonte-mono);
+  font-size: 12px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--cor-texto-forte);
+}
+
+.dialogo__corpo {
+  padding: 14px;
+  overflow-y: auto;
+}
+
+.dialogo__acoes {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  padding: 12px 14px;
+  border-top: 1px solid var(--cor-borda);
+}
+
+.dialogo__mensagem {
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.dialogo__impacto {
+  margin: 12px 0 0;
+  padding: 10px;
+  font-family: var(--fonte-mono);
+  font-size: 11px;
+  color: var(--cor-alerta);
+  border: 1px solid rgba(232, 177, 58, 0.35);
+  background: rgba(232, 177, 58, 0.06);
+}
+
+/* --- Avisos temporários --------------------------------------------------- */
+
+.avisos {
+  position: fixed;
+  top: 62px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  z-index: 70;
+  pointer-events: none;
+}
+
+.aviso-flutuante {
+  padding: 8px 14px;
+  font-family: var(--fonte-mono);
+  font-size: 11px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--cor-texto-forte);
+  background: var(--cor-painel-claro);
+  border: 1px solid var(--cor-borda-forte);
+}
+
+.aviso-flutuante--erro {
+  color: var(--cor-perigo);
+  border-color: rgba(224, 87, 74, 0.6);
+}
+
+.aviso-flutuante--sucesso {
+  color: var(--cor-sucesso);
+  border-color: rgba(111, 208, 140, 0.5);
+}
+
+/* --- Formulários ---------------------------------------------------------- */
+
+.formulario .grade-dupla,
+.grade-dupla {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+
+.influencia-linha {
+  display: grid;
+  grid-template-columns: 1.4fr 0.7fr 0.9fr 1.2fr auto;
+  align-items: end;
+  gap: 8px;
+  padding-bottom: 8px;
+  margin-bottom: 8px;
+  border-bottom: 1px solid rgba(44, 70, 52, 0.5);
+}
+
+.influencia-linha .campo {
+  margin-bottom: 0;
+}
+
+.influencia-linha .botao {
+  padding: 6px 8px;
+}
+
+/* --- Link para o índice --------------------------------------------------- */
+
+.atalhos-topo {
+  position: fixed;
+  top: 12px;
+  left: 12px;
+  display: flex;
+  gap: 6px;
+  z-index: 20;
+}
