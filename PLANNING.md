@@ -23,10 +23,13 @@ fases seguintes começarem — não precisam ser perguntadas de novo.
    publicação (detalhada em "Decisões pendentes").
 2. **Vocabulário da geração aleatória** — as tags e descrições ("Mundo velado",
    "Atmosfera corrosiva", os nomes sorteados) foram escritas sem referência do
-   tom da campanha. Se o clima da mesa for outro — mais militar, mais horror,
-   mais otimista —, o vocabulário fica em `backend/modules/catalog/dados.py` e em
-   `backend/modules/generator/gerador.py` e pode ser trocado inteiro. É ajuste de
-   gosto, não trava nada.
+   tom da campanha. O mesmo vale para os textos das **dez vocações de sistema** e
+   dos **arranjos estelares** acrescentados em 2026-09-05, e para as descrições
+   de rota que entraram no cenário de exemplo. Se o clima da mesa for outro —
+   mais militar, mais horror, mais otimista —, tudo isso fica em
+   `backend/modules/catalog/dados.py`, em `backend/modules/generator/gerador.py`
+   e em `backend/seed.py`, e pode ser trocado inteiro. É ajuste de gosto, não
+   trava nada.
 
 ---
 
@@ -55,7 +58,7 @@ de RPG de mesa sci-fi. Referência visual e funcional:
 
 Repositório: <https://github.com/oscarothon/starmap-rpg> (privado).
 
-Estado atual: **200 testes verdes** — 107 pytest, 53 vitest, 40 Playwright.
+Estado atual: **243 testes verdes** — 132 pytest, 57 vitest, 54 Playwright.
 
 ---
 
@@ -127,6 +130,47 @@ sistemas criados à mão, exigindo `--forcar`. A trava nasceu de um incidente re
 o seed foi rodado por engano contra o banco de desenvolvimento e apagou um
 sistema autoral, recuperado depois das páginas livres do arquivo SQLite.
 
+### Fase 2 — primeira rodada de refinamento (2026-09-05)
+
+Nove pontos levantados pelo usuário usando o mapa de verdade. Todos entregues.
+
+**Rotas.** "Corda cósmica" virou **Hyperlane** (migration `0003`, que renomeou o
+código junto com o rótulo — o catálogo é a fonte única, então os dois andam
+juntos). A opção de **mão dupla saiu**: rota liga os dois sistemas nos dois
+sentidos, sempre; a coluna `bidirectional` fica no banco como legado, sem ser
+lida nem escrita. A **descrição da rota, que não aparecia em lugar nenhum**,
+ganhou painel próprio: clicar numa rota seleciona ela e abre tipo, significado e
+descrição — em qualquer modo, com editar/excluir só no modo editor. E o mapa
+ganhou **legenda dos tracejados** das rotas presentes, ao lado da legenda de
+facções.
+
+> Ao fazer isso apareceu o motivo de a edição de rota ser tão difícil de acionar:
+> o `setPointerCapture` do palco redireciona o clique, então o `click` nunca
+> chegava na linha. A seleção passou a ser resolvida no `pointerup`, junto com o
+> clique em sistema. Também caiu um bug antigo: `Node.append(null)` escrevia o
+> texto "null" no painel — agora tudo passa por `anexar()`.
+
+**Corpos celestes.** Planetas não ficam mais orbitando o nada: a geração
+distribui os corpos **entre as estrelas** do sistema, e a migration `0004`
+adotou os órfãos já existentes na estrela principal. O centro do sistema passou a
+ser exclusivo das estrelas, validado no backend e refletido no formulário (a
+opção "centro do sistema" só aparece para estrela ou enquanto o sistema não tem
+nenhuma). Sistemas múltiplos ganharam **arranjos**: única, binária estreita
+(planetas circumbinários), binária ampla (cada estrela com seu cortejo),
+hierárquica (companheira orbitando a primária) e trinária.
+
+**Geração aleatória.** O botão de sortear métricas parecia travado: em ~30% dos
+sorteios saía um sistema desabitado, que não tem métrica nenhuma, e a tela não
+mudava. Agora o botão mostra que está trabalhando, não aceita clique duplo e
+**diz o que saiu** ("Sorteado: Sistema morto · Desabitado · sem métricas").
+Junto vieram **10 vocações** (bastião militar, polo industrial, capital,
+agrícola, minerador, científico, entreposto, fronteira, sem lei, sistema morto),
+que restringem os perfis de ocupação plausíveis e enviesam as métricas.
+
+**Glossário.** Corrigido o estouro das faixas de população (`10.000.000.000+`
+invadia a coluna vizinha) e acrescentadas as seções de arranjos estelares e
+vocações, além da amostra do traço em cada tipo de rota.
+
 ---
 
 ## Roteiro
@@ -146,19 +190,14 @@ Fase 5  módulos de campanha (boletins, procurados, corsários, conflitos)
 
 Nada aqui é módulo novo: é acabamento do que a Fase 1 entregou. **A lista abaixo
 são candidatos, não uma fila aprovada** — o usuário dá o recorte de cada rodada.
-
-**Já decidido, pronto para executar:**
-
-- **Gerador em sistemas múltiplos** (decisão 3). Hoje `gerar_corpos` usa só
-  `estrelas[0]` e devolve todos os corpos orbitando o centro. Passa a escolher
-  uma estrela hospedeira por corpo e a calcular a zona habitável a partir dela,
-  gravando o `parent_body_id` correspondente. Mudança contida em
-  `backend/modules/generator/gerador.py` + teste com semente fixa; o diagrama do
-  sistema já sabe desenhar órbitas aninhadas.
+A primeira rodada (nove pontos) está em "O que já está pronto".
 
 **Dívida técnica anotada, sem urgência:**
 
-- Limpeza das colunas legadas `star_count`/`star_type` de `star_system`.
+- Limpeza das colunas legadas `star_count`/`star_type` de `star_system` e
+  `bidirectional` de `lane`. Junto com elas, os DEFAULT que ficaram para trás
+  (`lane_type` ainda nasce como `'cosmic_string'` para quem inserir por SQL
+  direto; a aplicação sempre preenche o campo).
 - Rate limiting nas escritas da API.
 - Auditoria de dependências (`pip-audit` / `npm audit`).
 - Histórico de alterações do mapa (equivalente ao "Recent Changes" da
@@ -184,6 +223,11 @@ Escopo previsto, seguindo as diretrizes de segurança do `CLAUDE.md`:
   toda escrita.
 - Verificação de autorização **por rota**, no backend: esconder o botão na
   interface não é controle de acesso.
+- **Modo editor restrito ao mestre** (pedido em 2026-09-05). Hoje o botão "Modo
+  editor" e o atalho `E` estão abertos a qualquer um que abra o mapa. Passam a
+  aparecer só para o mestre autenticado — e, como esconder botão não é controle
+  de acesso, é a autorização por rota que efetivamente barra a escrita. Vale
+  para as telas de administração (`/administracao`) pelo mesmo motivo.
 - Página de login em português e um comando de linha para criar o primeiro
   mestre (sem cadastro aberto na web).
 

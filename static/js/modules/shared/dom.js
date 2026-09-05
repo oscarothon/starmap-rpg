@@ -36,6 +36,20 @@ export function limpar(no) {
   return no;
 }
 
+/**
+ * Anexa filhos ignorando os ausentes.
+ *
+ * `Node.append(null)` não ignora o nulo: ele escreve o texto "null" na tela.
+ * Como os painéis montam filhos condicionais (`condicao ? el(...) : null`),
+ * toda anexação passa por aqui.
+ */
+export function anexar(no, ...filhos) {
+  for (const filho of filhos.flat()) {
+    if (filho) no.appendChild(filho);
+  }
+  return no;
+}
+
 /** Número formatado no padrão brasileiro; "—" quando não há dado. */
 export function numero(valor, vazio = "—") {
   if (valor === null || valor === undefined || valor === "") return vazio;

@@ -45,33 +45,32 @@
   fill: #ffffff;
 }
 
-/* --- Rotas ---------------------------------------------------------------- */
+/* --- Rotas ----------------------------------------------------------------
+   A aparência (cor e tracejado de cada tipo) mora em theme.css, que o mapa, a
+   legenda e o glossário compartilham. Aqui fica só o comportamento. */
 
 .rota {
-  stroke: rgba(160, 200, 180, 0.35);
-  stroke-width: 1;
+  pointer-events: none;
+}
+
+/* Uma linha de 1px é fina demais para acertar com o mouse: cada rota carrega
+   uma faixa transparente e larga que recebe o clique no lugar dela. */
+.rota__area {
+  stroke: transparent;
+  stroke-width: 12;
   fill: none;
   pointer-events: stroke;
   cursor: pointer;
 }
 
-.rota:hover {
+.rota-grupo:hover .rota {
   stroke: var(--cor-destaque);
   stroke-width: 2;
 }
 
-.rota--unstable {
-  stroke-dasharray: 4 4;
-  stroke: rgba(232, 177, 58, 0.5);
-}
-
-.rota--restricted {
-  stroke: rgba(224, 87, 74, 0.5);
-  stroke-dasharray: 1 5;
-}
-
-.rota--trade_route {
-  stroke: rgba(201, 230, 75, 0.45);
+.rota-grupo--selecionada .rota {
+  stroke: var(--cor-destaque);
+  stroke-width: 2.4;
 }
 
 .rota--fantasma {
@@ -562,16 +561,6 @@
   margin: 10px 0 14px;
 }
 
-.etiqueta {
-  padding: 2px 8px;
-  font-family: var(--fonte-mono);
-  font-size: 10px;
-  letter-spacing: 0.08em;
-  color: var(--cor-texto);
-  border: 1px solid var(--cor-borda);
-  background: rgba(20, 36, 26, 0.7);
-}
-
 .botao--voltar {
   padding: 4px 8px;
   font-size: 10px;
@@ -800,6 +789,93 @@
 .legenda__cor {
   width: 10px;
   height: 10px;
+}
+
+/* Amostra do traço de uma rota, com o mesmo CSS que desenha o mapa. */
+.legenda__amostra {
+  width: 26px;
+  height: 8px;
+  overflow: visible;
+}
+
+.legenda__amostra .rota {
+  stroke-width: 1.6;
+}
+
+/* --- Painel da rota selecionada ------------------------------------------- */
+
+.painel-rota {
+  position: fixed;
+  left: 16px;
+  bottom: 16px;
+  width: 300px;
+  max-width: calc(100vw - 32px);
+  padding: 14px 16px;
+  z-index: 22;
+}
+
+.painel-rota[hidden] {
+  display: none;
+}
+
+.painel-rota__topo {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.painel-rota__titulo {
+  margin-top: 2px;
+  font-size: 15px;
+  letter-spacing: 0.04em;
+  color: var(--cor-texto-forte);
+}
+
+.painel-rota__tipo {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 10px;
+}
+
+.painel-rota__descricao {
+  margin: 10px 0 0;
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.painel-rota__fechar {
+  padding: 0 4px;
+  font-size: 18px;
+  line-height: 1;
+  color: var(--cor-texto-fraco);
+}
+
+.painel-rota__fechar:hover {
+  color: var(--cor-destaque);
+}
+
+.painel-rota .acoes-em-linha {
+  margin-top: 12px;
+}
+
+/* Seletor de vocação ao lado do botão de sorteio. */
+.sorteio {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.sorteio__preset {
+  max-width: 168px;
+  padding: 4px 6px;
+  font-size: 10px;
+}
+
+.botao--ocupado {
+  opacity: 0.7;
+  cursor: progress;
 }
 
 /* --- Diálogos ------------------------------------------------------------- */

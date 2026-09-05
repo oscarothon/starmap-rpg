@@ -134,6 +134,25 @@
   color: var(--cor-texto);
 }
 
+.cartao__etiquetas {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+  margin-top: 10px;
+}
+
+/* Amostra do traço da rota; o estilo do traço vem de theme.css. */
+.amostra-rota {
+  width: 34px;
+  height: 8px;
+  flex: none;
+  overflow: visible;
+}
+
+.amostra-rota .rota {
+  stroke-width: 1.6;
+}
+
 /* --- Métricas e faixas ----------------------------------------------------- */
 
 .metrica {
@@ -158,10 +177,25 @@
   font-size: 13px;
 }
 
+/* População chega a "10.000.000.000+": a coluna do intervalo precisa de mais
+   espaço que a das métricas, que vão só de 0 a 100. */
+.faixas--populacao .faixa {
+  grid-template-columns: 136px 130px 1fr;
+}
+
 .faixa__intervalo {
   font-family: var(--fonte-mono);
   font-size: 11px;
   color: var(--cor-texto-fraco);
+  white-space: nowrap;
+}
+
+@media (max-width: 620px) {
+  .faixa,
+  .faixas--populacao .faixa {
+    grid-template-columns: 1fr;
+    gap: 2px;
+  }
 }
 
 .faixa__nome {

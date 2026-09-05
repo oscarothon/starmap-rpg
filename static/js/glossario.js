@@ -5,7 +5,7 @@
  */
 
 import { carregarCatalogo, catalogo } from "./modules/shared/catalogo.js";
-import { el, limpar, numero } from "./modules/shared/dom.js";
+import { el, limpar, numero, svg } from "./modules/shared/dom.js";
 import { notificarErro } from "./modules/shared/notificacoes.js";
 
 const SECOES = [
@@ -35,7 +35,23 @@ const SECOES = [
     id: "rotas",
     titulo: "Tipos de rota",
     resumo: "As ligações entre sistemas no mapa, e o que cada uma significa para quem viaja.",
-    montar: (dados) => cartoes(dados.tipos_de_rota, cartaoSimples),
+    montar: (dados) => cartoes(dados.tipos_de_rota, cartaoDeRota),
+  },
+  {
+    id: "arranjos",
+    titulo: "Arranjos estelares",
+    resumo:
+      "Sistemas com mais de uma estrela se organizam de formas diferentes, e o arranjo " +
+      "decide onde os mundos podem se formar.",
+    montar: (dados) => cartoes(dados.arranjos_estelares, cartaoDeArranjo),
+  },
+  {
+    id: "presets",
+    titulo: "Vocações de sistema",
+    resumo:
+      "Usadas na geração aleatória: cada vocação restringe os perfis de ocupação plausíveis " +
+      "e empurra as métricas na direção certa.",
+    montar: (dados) => cartoes(dados.presets_de_sistema, cartaoDePreset),
   },
   {
     id: "regioes",
@@ -78,6 +94,66 @@ function cartaoSimples(item) {
   ]);
 }
 
+/** Cartão de rota com a amostra do traço usado no mapa. */
+function cartaoDeRota(tipo) {
+  return el("article", { classe: "cartao" }, [
+    el("div", { classe: "cartao__topo" }, [
+      amostraDeRota(tipo.codigo),
+      el("h3", { classe: "cartao__titulo", texto: tipo.nome }),
+    ]),
+    el("p", { classe: "cartao__resumo", texto: tipo.resumo }),
+    el("p", { classe: "cartao__texto", texto: tipo.descricao }),
+  ]);
+}
+
+function cartaoDeArranjo(arranjo) {
+  const quantidades = arranjo.estrelas
+    .map((quantidade) => `${quantidade} estrela${quantidade > 1 ? "s" : ""}`)
+    .join(" ou ");
+
+  return el("article", { classe: "cartao" }, [
+    el("h3", { classe: "cartao__titulo", texto: arranjo.nome }),
+    el("p", { classe: "cartao__resumo", texto: arranjo.resumo }),
+    el("p", { classe: "cartao__texto", texto: arranjo.descricao }),
+    el("div", { classe: "cartao__rodape" }, [
+      el("span", { classe: "rotulo", texto: "Composição" }),
+      el("span", { classe: "cartao__dado", texto: quantidades }),
+    ]),
+  ]);
+}
+
+function cartaoDePreset(preset) {
+  const enfases = Object.entries(preset.enfases || {})
+    .sort(([, a], [, b]) => b - a)
+    .map(([codigo, valor]) =>
+      el("span", {
+        classe: `etiqueta etiqueta--${valor >= 0 ? "alta" : "baixa"}`,
+        texto: `${nomeDaMetrica(codigo)} ${valor >= 0 ? "↑" : "↓"}`,
+      })
+    );
+
+  return el("article", { classe: "cartao" }, [
+    el("h3", { classe: "cartao__titulo", texto: preset.nome }),
+    el("p", { classe: "cartao__resumo", texto: preset.resumo }),
+    el("p", { classe: "cartao__texto", texto: preset.descricao }),
+    enfases.length
+      ? el("div", { classe: "cartao__etiquetas" }, enfases)
+      : el("p", { classe: "cartao__texto", texto: "Sem métricas: o sistema está vazio." }),
+  ]);
+}
+
+function nomeDaMetrica(codigo) {
+  const metrica = catalogo().metricas.find((item) => item.codigo === codigo);
+  return metrica ? metrica.nome : codigo;
+}
+
+/** Amostra do traço de uma rota: o estilo vem do mesmo CSS que o mapa usa. */
+function amostraDeRota(codigo) {
+  return svg("svg", { classe: "amostra-rota", viewBox: "0 0 34 8", "aria-hidden": "true" }, [
+    svg("line", { classe: `rota rota--${codigo}`, x1: 1, y1: 4, x2: 33, y2: 4 }),
+  ]);
+}
+
 function blocoDeMetrica(metrica) {
   return el("article", { classe: "metrica" }, [
     el("h3", { classe: "cartao__titulo", texto: metrica.nome }),
@@ -98,7 +174,9 @@ function blocoDeMetrica(metrica) {
 }
 
 function tabelaDePopulacao(faixas) {
-  return el("div", { classe: "faixas" }, [
+  // Coluna própria: "10.000.000.000+" não cabe na largura das faixas de métrica,
+  // que vão só até 100.
+  return el("div", { classe: "faixas faixas--populacao" }, [
     ...faixas.map((faixa) =>
       el("div", { classe: "faixa" }, [
         el("span", {

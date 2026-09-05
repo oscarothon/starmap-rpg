@@ -44,13 +44,13 @@ ROTULOS = {
     "system_a_id": "Sistema de origem",
     "system_b_id": "Sistema de destino",
     "lane_type": "Tipo da rota",
-    "bidirectional": "Mão dupla",
-    "notes": "Observações",
+    "notes": "Descrição",
     "influences": "Influências",
     "faction_id": "Facção",
     "influence_value": "Influência",
     "trend": "Tendência",
     "qualitative_label": "Rótulo",
+    "preset": "Preset da geração",
 }
 
 

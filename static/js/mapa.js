@@ -6,11 +6,12 @@
 import { criarBusca } from "./modules/map/busca.js";
 import { criarCamera, limitesDe } from "./modules/map/camera.js";
 import { criarGerenciadorCamadas } from "./modules/map/camadas.js";
+import { criarPainelRota } from "./modules/map/painelRota.js";
 import { criarRenderizador } from "./modules/map/renderizador.js";
 import { api } from "./modules/shared/api.js";
-import { carregarCatalogo } from "./modules/shared/catalogo.js";
-import { abrirDialogo, confirmar } from "./modules/shared/dialogo.js";
-import { el, limpar } from "./modules/shared/dom.js";
+import { carregarCatalogo, tipoDeRota } from "./modules/shared/catalogo.js";
+import { abrirDialogo } from "./modules/shared/dialogo.js";
+import { el, limpar, svg } from "./modules/shared/dom.js";
 import { notificar, notificarErro, notificarSucesso } from "./modules/shared/notificacoes.js";
 import { formularioRota, formularioSistema } from "./modules/systems/formularios.js";
 import { criarPainelSistema } from "./modules/systems/painelSistema.js";
@@ -51,6 +52,14 @@ const painel = criarPainelSistema({
   },
 });
 
+const painelRota = criarPainelRota({
+  raiz: document.getElementById("painel-rota"),
+  api,
+  aoMudarDados: carregarMapa,
+  aoFechar: () => renderizador.marcarRotaSelecionada(null),
+  sistemaPorId: (id) => renderizador.sistemaPorId(id),
+});
+
 // --- Camadas ---------------------------------------------------------------
 
 function registrarCamadas() {
@@ -70,6 +79,15 @@ function registrarCamadas() {
       rotulo: "Rotas",
       visivel: true,
       desenhar: alternarGrupo(grupos.rotas),
+      // Legenda só dos tipos que existem no mapa: o vocabulário completo é
+      // assunto do glossário.
+      legenda: () => {
+        const presentes = new Set(estado.dados.lanes.map((rota) => rota.lane_type));
+        return [...presentes]
+          .map((codigo) => tipoDeRota(codigo))
+          .filter(Boolean)
+          .map((tipo) => ({ rotulo: tipo.nome, rota: tipo.codigo }));
+      },
     })
     .registrar({
       id: "sistemas",
@@ -113,11 +131,19 @@ function desenharLegenda() {
   for (const item of itens) {
     legenda.appendChild(
       el("div", { classe: "legenda__item" }, [
-        el("span", { classe: "legenda__cor", style: `background:${item.cor}` }),
+        // Tipo de rota entra como amostra do traço; facção, como quadrado de cor.
+        item.rota ? amostraDeRota(item.rota) : el("span", { classe: "legenda__cor", style: `background:${item.cor}` }),
         el("span", { texto: item.rotulo }),
       ])
     );
   }
+}
+
+/** Traço de amostra de um tipo de rota, com o mesmo CSS que desenha o mapa. */
+function amostraDeRota(codigo) {
+  return svg("svg", { classe: "legenda__amostra", viewBox: "0 0 26 8" }, [
+    svg("line", { classe: `rota rota--${codigo}`, x1: 0, y1: 4, x2: 26, y2: 4 }),
+  ]);
 }
 
 // --- Dados -----------------------------------------------------------------
@@ -169,6 +195,10 @@ let arraste = null;
 palco.addEventListener("pointerdown", (evento) => {
   if (evento.button !== 0) return;
   const noSistema = evento.target.closest(".sistema");
+  // A rota é anotada aqui, e não num listener de clique no grupo de rotas:
+  // o `setPointerCapture` abaixo redireciona o clique para o palco, então lá
+  // o alvo já não é mais a linha. No pointerdown ele ainda é.
+  const noRota = evento.target.closest("[data-rota]");
 
   arraste = {
     inicioX: evento.clientX,
@@ -177,6 +207,7 @@ palco.addEventListener("pointerdown", (evento) => {
     ultimoY: evento.clientY,
     moveu: false,
     sistemaId: noSistema ? Number(noSistema.dataset.sistema) : null,
+    rotaId: noRota ? Number(noRota.dataset.rota) : null,
     arrastandoSistema: Boolean(noSistema) && estado.modoEditor && estado.ferramenta === "navegar",
   };
 
@@ -241,7 +272,11 @@ palco.addEventListener("pointerup", async (evento) => {
   if (finalizado.sistemaId !== null) {
     await aoClicarEmSistema(finalizado.sistemaId);
   } else if (estado.modoEditor && estado.ferramenta === "novo-sistema") {
+    // A ferramenta ativa manda: com ela ligada, o clique cria um sistema mesmo
+    // que caia em cima de uma rota.
     await criarSistemaEm(evento);
+  } else if (finalizado.rotaId !== null) {
+    selecionarRota(finalizado.rotaId);
   } else if (estado.origemConexao) {
     cancelarConexao();
   }
@@ -272,6 +307,7 @@ async function aoClicarEmSistema(sistemaId) {
     await tratarConexao(sistemaId);
     return;
   }
+  painelRota.fechar();
   renderizador.marcarSelecionado(sistemaId);
   await painel.mostrar(sistemaId);
 }
@@ -414,55 +450,21 @@ function atualizarRotaFantasma(evento) {
   estado.rotaFantasma.setAttribute("y2", destino.y);
 }
 
-// --- Rotas: edição e exclusão ----------------------------------------------
+// --- Rotas: seleção ---------------------------------------------------------
 
-grupos.rotas.addEventListener("click", async (evento) => {
-  if (!estado.modoEditor) return;
-  const linha = evento.target.closest(".rota");
-  if (!linha || !linha.dataset.rota) return;
-
-  const rotaId = Number(linha.dataset.rota);
-  const rota = estado.dados.lanes.find((item) => item.id === rotaId);
+/**
+ * Clicar numa rota seleciona ela e abre o painel com a descrição — em qualquer
+ * modo. A edição fica dentro do painel, visível só no modo editor.
+ */
+function selecionarRota(rotaId) {
+  const rota = renderizador.rotaPorId(rotaId);
   if (!rota) return;
 
-  const formulario = formularioRota(rota);
-  const acao = await abrirDialogo({
-    titulo: "Editar rota",
-    conteudo: formulario.elemento,
-    acoes: [
-      { texto: "Excluir", id: "excluir", classe: "botao--perigo", valor: "excluir" },
-      { texto: "Cancelar", id: "cancelar", valor: null },
-      {
-        texto: "Salvar",
-        id: "salvar",
-        classe: "botao--primario",
-        aoClicar: async () => {
-          try {
-            await api.atualizarRota(rotaId, formulario.valores());
-            return "salvou";
-          } catch (erro) {
-            notificarErro(erro);
-            return false;
-          }
-        },
-      },
-    ],
-  });
-
-  if (acao === "excluir") {
-    const confirmado = await confirmar({
-      titulo: "Excluir rota",
-      mensagem: "Excluir esta rota entre os dois sistemas?",
-    });
-    if (!confirmado) return;
-    await api.excluirRota(rotaId);
-    await carregarMapa();
-    notificarSucesso("Rota excluída.");
-  } else if (acao === "salvou") {
-    await carregarMapa();
-    notificarSucesso("Rota atualizada.");
-  }
-});
+  painel.fechar();
+  renderizador.marcarSelecionado(null);
+  renderizador.marcarRotaSelecionada(rota.id);
+  painelRota.mostrar(rota);
+}
 
 // --- Modo editor -----------------------------------------------------------
 
@@ -476,6 +478,7 @@ function definirModoEditor(ativo) {
   document.getElementById("ferramentas-editor").hidden = !ativo;
   atualizarFerramentaAtiva();
   painel.definirModoEditor(ativo);
+  painelRota.definirModoEditor(ativo);
 }
 
 function definirFerramenta(ferramenta) {
@@ -527,6 +530,7 @@ function ligarInterface() {
     if (evento.target.matches("input, textarea, select")) return;
     if (evento.key === "Escape") {
       if (estado.origemConexao !== null) cancelarConexao();
+      else if (painelRota.rotaAtual) painelRota.fechar();
       else painel.fechar();
     } else if (evento.key.toLowerCase() === "e") {
       definirModoEditor(!estado.modoEditor);

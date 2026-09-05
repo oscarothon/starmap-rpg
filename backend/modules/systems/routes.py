@@ -130,6 +130,9 @@ def criar_corpo(system_id):
     payload = payload_of(request)
     values = repo.parse_body(payload, partial=False)
     repo.validate_body_parent(conn, system_id, None, values.get("parent_body_id"))
+    repo.validate_body_placement(
+        conn, system_id, values.get("body_type", "planet"), values.get("parent_body_id")
+    )
     values["system_id"] = system_id
     with conn:
         body_id = repo.BODIES.insert(conn, values)
@@ -141,11 +144,18 @@ def criar_corpo(system_id):
 @blueprint.patch("/<int:system_id>/bodies/<int:body_id>")
 def atualizar_corpo(system_id, body_id):
     conn = get_db()
-    _get_body(conn, system_id, body_id)
+    atual = _get_body(conn, system_id, body_id)
     payload = payload_of(request)
     values = repo.parse_body(payload, partial=True)
     if "parent_body_id" in values:
         repo.validate_body_parent(conn, system_id, body_id, values["parent_body_id"])
+    # Numa atualização parcial, o que não veio no payload continua valendo.
+    repo.validate_body_placement(
+        conn,
+        system_id,
+        values.get("body_type", atual["body_type"]),
+        values["parent_body_id"] if "parent_body_id" in values else atual["parent_body_id"],
+    )
     with conn:
         repo.BODIES.update(conn, body_id, values)
         if "tags" in payload:

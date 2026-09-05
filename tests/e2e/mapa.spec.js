@@ -84,7 +84,9 @@ test("a camada de influência mostra a legenda das facções", async ({ page }) 
 
   const legenda = page.locator("#legenda");
   await expect(legenda).toBeVisible();
-  await expect(legenda.locator(".legenda__item")).toHaveCount(5);
+  // Uma amostra de cor por facção; os tracejados de rota entram na mesma
+  // legenda, com amostra própria.
+  await expect(legenda.locator(".legenda__cor")).toHaveCount(5);
 });
 
 test("a roda do mouse aproxima mantendo o mapa na tela", async ({ page }) => {

@@ -37,8 +37,13 @@ export const api = {
   catalogo: () => requisitar("GET", "/api/catalog"),
 
   // Geração aleatória
-  proporSistema: (comNome = false) =>
-    requisitar("GET", `/api/generation/system${comNome ? "?nome=1" : ""}`),
+  proporSistema: ({ comNome = false, preset = "" } = {}) => {
+    const parametros = new URLSearchParams();
+    if (comNome) parametros.set("nome", "1");
+    if (preset) parametros.set("preset", preset);
+    const consulta = parametros.toString();
+    return requisitar("GET", `/api/generation/system${consulta ? `?${consulta}` : ""}`);
+  },
   proporNome: () => requisitar("GET", "/api/generation/name"),
   gerarConteudo: (sistemaId, opcoes = {}) =>
     requisitar("POST", `/api/generation/systems/${sistemaId}`, opcoes),

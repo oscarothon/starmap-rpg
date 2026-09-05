@@ -392,8 +392,8 @@ METRICAS = (
 
 TIPOS_DE_ROTA = (
     {
-        "codigo": "cosmic_string",
-        "nome": "Corda cósmica",
+        "codigo": "hyperlane",
+        "nome": "Hyperlane",
         "resumo": "Rota estável padrão entre dois sistemas",
         "descricao": (
             "A infraestrutura básica da navegação interestelar: previsível, mapeada "
@@ -426,6 +426,215 @@ TIPOS_DE_ROTA = (
             "Bloqueada por decreto, quarentena ou presença militar. Cruzá-la sem "
             "autorização é ato hostil."
         ),
+    },
+)
+
+# --- Arranjos de sistemas múltiplos ------------------------------------------
+# Como as estrelas de um sistema se organizam entre si. O arranjo decide onde os
+# planetas podem se formar, então a geração aleatória sorteia um destes antes de
+# distribuir os corpos.
+#
+#   peso       frequência relativa no sorteio
+#   estrelas   quantidades de estrelas compatíveis com o arranjo
+
+ARRANJOS_ESTELARES = (
+    {
+        "codigo": "unica",
+        "nome": "Estrela única",
+        "resumo": "Uma só estrela no centro, com todos os planetas em volta dela",
+        "descricao": (
+            "O arranjo mais simples e o mais fácil de colonizar: uma zona habitável "
+            "só, órbitas estáveis e nenhuma segunda gravidade puxando os mundos."
+        ),
+        "estrelas": (1,),
+        "peso": 55,
+    },
+    {
+        "codigo": "binaria_estreita",
+        "nome": "Binária estreita",
+        "resumo": "Duas estrelas quase encostadas; os planetas orbitam o par inteiro",
+        "descricao": (
+            "As duas estrelas giram uma em torno da outra a menos de uma unidade "
+            "astronômica. De longe elas somam luz como se fossem uma só, e os "
+            "planetas descrevem órbitas circumbinárias em volta das duas. Céu com "
+            "dois sóis que nunca se separam."
+        ),
+        "estrelas": (2,),
+        "peso": 16,
+    },
+    {
+        "codigo": "binaria_ampla",
+        "nome": "Binária ampla",
+        "resumo": "Duas estrelas distantes, cada uma com o seu próprio cortejo de mundos",
+        "descricao": (
+            "Separadas por dezenas ou centenas de unidades astronômicas, as duas "
+            "estrelas mal interferem uma na outra: cada uma forma e mantém os "
+            "próprios planetas. Na prática são dois sistemas que dividem um nome — e "
+            "às vezes dois donos."
+        ),
+        "estrelas": (2,),
+        "peso": 14,
+    },
+    {
+        "codigo": "hierarquica",
+        "nome": "Hierárquica",
+        "resumo": "Uma primária dominante com companheiras menores orbitando-a",
+        "descricao": (
+            "Uma estrela concentra quase toda a massa e as companheiras giram em "
+            "volta dela, longe o bastante para não desmontar as órbitas internas. Os "
+            "mundos ficam com a primária; as companheiras aparecem como faróis "
+            "distantes que atravessam o céu."
+        ),
+        "estrelas": (2, 3, 4),
+        "peso": 12,
+    },
+    {
+        "codigo": "trinaria",
+        "nome": "Trinária em cortejo",
+        "resumo": "Três estrelas dividindo o sistema, cada uma com seus mundos",
+        "descricao": (
+            "Três estrelas afastadas o suficiente para cada uma sustentar planetas "
+            "próprios. Sistemas assim são valiosos — três zonas habitáveis num salto "
+            "só — e por isso raramente ficam sem dono."
+        ),
+        "estrelas": (3, 4),
+        "peso": 3,
+    },
+)
+
+# --- Presets de geração de sistema -------------------------------------------
+# Um preset descreve a vocação do sistema e enviesa a proposta aleatória para
+# ficar coerente com ela: quais perfis de ocupação são plausíveis e quanto cada
+# métrica sobe ou desce em relação ao patamar do perfil.
+#
+#   perfis    códigos de PERFIS (backend/modules/generator/gerador.py)
+#   enfases   deslocamento aplicado à métrica, de -40 a +40
+
+PRESETS_DE_SISTEMA = (
+    {
+        "codigo": "militar",
+        "nome": "Bastião militar",
+        "resumo": "Guarnição, estaleiro de guerra e lei marcial",
+        "descricao": (
+            "O sistema existe para sustentar uma frota. Ordem rígida e indústria "
+            "pesada convivem com racionamento e vigilância: bom lugar para consertar "
+            "uma nave, péssimo para fazer perguntas."
+        ),
+        "perfis": ("posto", "colonia", "povoado"),
+        "enfases": {
+            "industry": 18,
+            "stability": 25,
+            "information": 8,
+            "quality_of_life": -22,
+            "economy": -5,
+        },
+    },
+    {
+        "codigo": "industrial",
+        "nome": "Polo industrial",
+        "resumo": "Refinarias, estaleiros e céu permanentemente encoberto",
+        "descricao": (
+            "Tudo que se extrai na região é processado aqui. A produção sustenta a "
+            "economia e destrói o ar: quem pode pagar mora em órbita."
+        ),
+        "perfis": ("colonia", "povoado", "central"),
+        "enfases": {"industry": 28, "economy": 12, "quality_of_life": -20, "innovation": 5},
+    },
+    {
+        "codigo": "capital",
+        "nome": "Capital",
+        "resumo": "Sede de poder, com tudo funcionando ao mesmo tempo",
+        "descricao": (
+            "Centro administrativo de uma potência. Bilhões de habitantes, capital "
+            "farto, arquivos abertos e a polícia mais eficiente do braço."
+        ),
+        "perfis": ("central",),
+        "enfases": {
+            "economy": 20,
+            "information": 22,
+            "stability": 15,
+            "innovation": 12,
+            "quality_of_life": 10,
+        },
+    },
+    {
+        "codigo": "agricola",
+        "nome": "Mundo agrícola",
+        "resumo": "Celeiro de um aglomerado inteiro",
+        "descricao": (
+            "Clima estável e solo aproveitável fizeram do sistema a despensa da "
+            "região. Vida boa e previsível, indústria mínima e dependência total de "
+            "quem compra a colheita."
+        ),
+        "perfis": ("colonia", "povoado"),
+        "enfases": {"quality_of_life": 20, "stability": 10, "industry": -22, "innovation": -12},
+    },
+    {
+        "codigo": "minerador",
+        "nome": "Distrito minerador",
+        "resumo": "Cinturões explorados até o osso",
+        "descricao": (
+            "A riqueza está em órbita, não no chão. Turnos longos, acidentes "
+            "frequentes e uma companhia que costuma ser dona da lei local."
+        ),
+        "perfis": ("posto", "colonia"),
+        "enfases": {"industry": 20, "economy": 8, "quality_of_life": -25, "stability": -10},
+    },
+    {
+        "codigo": "cientifico",
+        "nome": "Enclave científico",
+        "resumo": "Laboratórios, observatórios e muito segredo",
+        "descricao": (
+            "População pequena e altamente especializada em torno de instalações de "
+            "pesquisa. Produz o que ninguém mais sabe fazer — e atrai quem quer isso "
+            "sem pagar."
+        ),
+        "perfis": ("posto", "colonia"),
+        "enfases": {"innovation": 30, "information": 18, "industry": -8, "economy": -5},
+    },
+    {
+        "codigo": "comercial",
+        "nome": "Entreposto comercial",
+        "resumo": "Cruzamento de rotas onde tudo passa e tudo se compra",
+        "descricao": (
+            "Vive do trânsito: docas, armazéns, câmbio e notícia fresca. Rico e "
+            "cosmopolita, com uma ordem pública que depende de quem está no porto."
+        ),
+        "perfis": ("colonia", "povoado", "central"),
+        "enfases": {"economy": 25, "information": 15, "stability": -8},
+    },
+    {
+        "codigo": "fronteira",
+        "nome": "Posto de fronteira",
+        "resumo": "O último lugar com nome antes do vazio",
+        "descricao": (
+            "Um punhado de gente, um pouso e um repetidor. Tudo o que chega vem de "
+            "fora, e demora."
+        ),
+        "perfis": ("desabitado", "posto"),
+        "enfases": {"information": -18, "economy": -10, "industry": -10},
+    },
+    {
+        "codigo": "sem_lei",
+        "nome": "Refúgio sem lei",
+        "resumo": "Nenhuma autoridade reconhecida controla o sistema",
+        "descricao": (
+            "Contrabando, portos clandestinos e acordos que valem enquanto alguém "
+            "puder fazê-los valer. Circula mais dinheiro do que se admite."
+        ),
+        "perfis": ("posto", "colonia", "povoado"),
+        "enfases": {"stability": -32, "information": -12, "economy": 6, "quality_of_life": -12},
+    },
+    {
+        "codigo": "ruina",
+        "nome": "Sistema morto",
+        "resumo": "Habitado um dia; hoje só o que ficou para trás",
+        "descricao": (
+            "Guerra, colapso ou evacuação. Restam estruturas, órbitas cheias de "
+            "detritos e o que ninguém teve tempo de levar."
+        ),
+        "perfis": ("desabitado",),
+        "enfases": {},
     },
 )
 
@@ -526,6 +735,8 @@ def catalogo_completo():
             for metrica in METRICAS
         ],
         "tipos_de_rota": list(TIPOS_DE_ROTA),
+        "arranjos_estelares": list(ARRANJOS_ESTELARES),
+        "presets_de_sistema": list(PRESETS_DE_SISTEMA),
         "niveis_de_regiao": list(NIVEIS_DE_REGIAO),
         "tendencias": list(TENDENCIAS),
         "faixas_de_populacao": list(FAIXAS_DE_POPULACAO),

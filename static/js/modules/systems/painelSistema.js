@@ -11,7 +11,7 @@
 
 import { abrirDialogo, confirmar } from "../shared/dialogo.js";
 import { faixaDePopulacao, nomeDaClasse, nomeDoTipoDeCorpo } from "../shared/catalogo.js";
-import { el, limpar, numero, populacao } from "../shared/dom.js";
+import { anexar, el, limpar, numero, populacao } from "../shared/dom.js";
 import { notificarErro, notificarSucesso } from "../shared/notificacoes.js";
 import { CENTRO_DO_SISTEMA, METRICAS, formularioCorpo, formularioInfluencias, formularioSistema } from "./formularios.js";
 import { desenharMapaDoSistema } from "./mapaDoSistema.js";
@@ -84,7 +84,8 @@ export function criarPainelSistema({ raiz, api, aoMudarDados, contexto }) {
 
   function desenharTopo() {
     const caminho = (sistema.region_path || []).map((passo) => passo.name).join(" // ");
-    limpar(noTopo).append(
+    anexar(
+      limpar(noTopo),
       el("button", {
         classe: "painel-sistema__fechar",
         texto: "×",

@@ -52,6 +52,19 @@ describe("montagem das linhas de órbita", () => {
     expect(linhas[0].estrelas.map((e) => e.name)).toEqual(["A", "B"]);
   });
 
+  it("desenha a companheira hierárquica na linha da primária", () => {
+    // Arranjo hierárquico: a companheira é um corpo filho da estrela principal,
+    // então aparece na linha dela, ao lado dos mundos.
+    const companheira = { ...estrela(2, "Alfa B"), children: [] };
+    const linhas = montarLinhas({
+      bodies: [estrela(1, "Alfa A", [companheira, planeta(3, "Alfa I")])],
+    });
+
+    expect(linhas).toHaveLength(2);
+    expect(linhas[0].estrelas.map((e) => e.name)).toEqual(["Alfa A"]);
+    expect(linhas[1].corpos.map((c) => c.name)).toEqual(["Alfa B", "Alfa I"]);
+  });
+
   it("lida com sistema sem nenhum corpo", () => {
     const linhas = montarLinhas({ bodies: [] });
 

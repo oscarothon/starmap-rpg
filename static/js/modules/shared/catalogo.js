@@ -13,6 +13,8 @@ const VAZIO = {
   tipos_de_corpo: [],
   metricas: [],
   tipos_de_rota: [],
+  arranjos_estelares: [],
+  presets_de_sistema: [],
   niveis_de_regiao: [],
   tendencias: [],
   faixas_de_populacao: [],
@@ -51,6 +53,7 @@ export const opcoesDeClasseDeEstrela = (vazio = null) =>
   opcoesDe(dados.classes_de_estrela, { vazio });
 export const opcoesDeTipoDeCorpo = () => opcoesDe(dados.tipos_de_corpo);
 export const opcoesDeTipoDeRota = () => opcoesDe(dados.tipos_de_rota);
+export const opcoesDePreset = (vazio = null) => opcoesDe(dados.presets_de_sistema, { vazio });
 export const opcoesDeNivelDeRegiao = () => opcoesDe(dados.niveis_de_regiao);
 export const opcoesDeTendencia = () => opcoesDe(dados.tendencias);
 
@@ -61,6 +64,12 @@ function achar(lista, codigo) {
 export const classeDeEstrela = (codigo) => achar(dados.classes_de_estrela, codigo);
 export const tipoDeCorpo = (codigo) => achar(dados.tipos_de_corpo, codigo);
 export const metrica = (codigo) => achar(dados.metricas, codigo);
+export const tipoDeRota = (codigo) => achar(dados.tipos_de_rota, codigo);
+
+export function nomeDoTipoDeRota(codigo) {
+  const tipo = tipoDeRota(codigo);
+  return tipo ? tipo.nome : codigo;
+}
 
 /** Cor da classe espectral, com um cinza neutro como reserva. */
 export function corDaEstrela(codigo) {

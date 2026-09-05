@@ -1,13 +1,18 @@
 """Rotas entre sistemas — as arestas do grafo do mapa."""
 
+from ..catalog.dados import TIPOS_DE_ROTA, codigos
 from ..core import validation as v
 from ..core.repository import Table
 
-LANE_TYPES = ("cosmic_string", "trade_route", "unstable", "restricted")
+LANE_TYPES = codigos(TIPOS_DE_ROTA)
+TIPO_PADRAO = "hyperlane"
 
+# `bidirectional` não entra nas colunas graváveis: rota liga os dois sistemas
+# nos dois sentidos, sempre. A coluna sobrevive no banco como legado da
+# migration 0001 (ver 0003_rotas_hyperlane.sql).
 LANES = Table(
     name="lane",
-    columns=("system_a_id", "system_b_id", "lane_type", "bidirectional", "notes"),
+    columns=("system_a_id", "system_b_id", "lane_type", "notes"),
     label="Rota",
     order_by="id",
     touch=False,
@@ -16,8 +21,7 @@ LANES = Table(
 FIELDS = (
     ("system_a_id", v.reference, {}),
     ("system_b_id", v.reference, {}),
-    ("lane_type", v.choice, {"options": LANE_TYPES, "default": "cosmic_string"}),
-    ("bidirectional", v.boolean, {"default": 1}),
+    ("lane_type", v.choice, {"options": LANE_TYPES, "default": TIPO_PADRAO}),
     ("notes", v.text, {"default": "", "allow_empty": True, "max_length": v.TEXTO_MEDIO}),
 )
 

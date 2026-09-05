@@ -206,6 +206,34 @@ def body_counts(conn, system_id):
     return counts
 
 
+def has_star(conn, system_id):
+    return (
+        conn.execute(
+            "SELECT 1 FROM celestial_body WHERE system_id = ? AND body_type = 'star' LIMIT 1",
+            (system_id,),
+        ).fetchone()
+        is not None
+    )
+
+
+def validate_body_placement(conn, system_id, body_type, parent_body_id):
+    """No centro do sistema só cabe estrela.
+
+    Um planeta com `parent_body_id` vazio ficaria orbitando o baricentro, que é
+    o lugar das estrelas — foi assim que apareceram mundos orbitando o nada.
+    Enquanto o sistema não tem estrela nenhuma a regra não vale: não há a quem
+    entregar o corpo, e o mestre pode cadastrar os planetas antes da estrela.
+    """
+    if body_type == "star" or parent_body_id is not None:
+        return
+    if not has_star(conn, system_id):
+        return
+    raise v.ValidationError(
+        "No centro do sistema só ficam estrelas. Escolha o corpo que este orbita.",
+        "parent_body_id",
+    )
+
+
 def validate_body_parent(conn, system_id, body_id, parent_body_id):
     """O corpo orbitado precisa ser do mesmo sistema, sem formar ciclo.
 

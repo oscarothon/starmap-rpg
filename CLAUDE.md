@@ -48,11 +48,22 @@ em curso —, isso **se perde**. Anote o estado no `PLANNING.md` antes.
   colunas do sistema. É o que permite binários e trinários e a hierarquia do
   diagrama. As colunas `star_system.star_count`/`star_type` são legado morto:
   não leia nem escreva nelas — conte a partir de `celestial_body`.
+- **No centro do sistema só ficam estrelas.** Um corpo com `parent_body_id`
+  nulo orbita o baricentro, que é o lugar delas; qualquer outro tipo precisa
+  orbitar alguma coisa (`validate_body_placement`, em `systems/repository.py`).
+  A regra só é dispensada enquanto o sistema não tem estrela nenhuma, para o
+  mestre poder cadastrar na ordem que quiser. Numa binária estreita os planetas
+  são circumbinários: ficam pendurados na primária, com a tag correspondente.
 - **`backend/modules/catalog/dados.py` é a fonte única** de tudo que é
   enumerado: classes de estrela, tipos de corpo e de rota, níveis de região,
-  métricas e suas faixas. Alimenta ao mesmo tempo os dropdowns, a validação e a
-  página de Glossário. Acrescentar um tipo novo é editar esse arquivo — nunca
-  duplicar a lista no frontend.
+  métricas e suas faixas, arranjos estelares e as vocações (presets) da geração.
+  Alimenta ao mesmo tempo os dropdowns, a validação e a página de Glossário.
+  Acrescentar um tipo novo é editar esse arquivo — nunca duplicar a lista no
+  frontend. A aparência do traço de cada tipo de rota é a exceção: mora em
+  `static/css/theme.css`, compartilhada pelo mapa, pela legenda e pelo glossário.
+- **`Node.append(null)` escreve o texto "null" na tela.** Os painéis montam
+  filhos condicionais, então toda anexação passa por `anexar()`
+  (`shared/dom.js`), que ignora os ausentes.
 
 ## Comandos de teste — **rode antes de declarar uma feature pronta**
 

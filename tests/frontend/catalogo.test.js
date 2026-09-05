@@ -21,7 +21,15 @@ const CATALOGO = {
       ],
     },
   ],
-  tipos_de_rota: [{ codigo: "cosmic_string", nome: "Corda cósmica" }],
+  tipos_de_rota: [
+    { codigo: "hyperlane", nome: "Hyperlane", resumo: "Rota estável padrão" },
+    { codigo: "unstable", nome: "Instável", resumo: "Passagem irregular" },
+  ],
+  arranjos_estelares: [{ codigo: "unica", nome: "Estrela única", estrelas: [1] }],
+  presets_de_sistema: [
+    { codigo: "militar", nome: "Bastião militar" },
+    { codigo: "capital", nome: "Capital" },
+  ],
   niveis_de_regiao: [{ codigo: "cluster", nome: "Aglomerado" }],
   tendencias: [{ codigo: "steady", nome: "Estável" }],
   faixas_de_populacao: [
@@ -42,8 +50,11 @@ const {
   faixaDePopulacao,
   nomeDaClasse,
   nomeDoTipoDeCorpo,
+  nomeDoTipoDeRota,
   opcoesDeClasseDeEstrela,
+  opcoesDePreset,
   opcoesDeTipoDeCorpo,
+  tipoDeRota,
 } = await import("../../static/js/modules/shared/catalogo.js");
 
 beforeEach(async () => {
@@ -74,6 +85,26 @@ describe("opções para os formulários", () => {
       "",
       "— não informada —",
     ]);
+  });
+
+  it("oferece as vocações de sistema com a opção de sorteio livre", () => {
+    expect(opcoesDePreset("— vocação aleatória —")).toEqual([
+      ["", "— vocação aleatória —"],
+      ["militar", "Bastião militar"],
+      ["capital", "Capital"],
+    ]);
+  });
+});
+
+describe("tipos de rota", () => {
+  it("resolve o tipo inteiro, para o painel mostrar o que ele significa", () => {
+    expect(tipoDeRota("hyperlane").resumo).toBe("Rota estável padrão");
+    expect(tipoDeRota("inexistente")).toBeNull();
+  });
+
+  it("cai no código quando o tipo é desconhecido", () => {
+    expect(nomeDoTipoDeRota("unstable")).toBe("Instável");
+    expect(nomeDoTipoDeRota("dobra")).toBe("dobra");
   });
 });
 

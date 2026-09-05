@@ -11,11 +11,12 @@ import { api } from "../shared/api.js";
 import {
   faixaDaMetrica,
   opcoesDeClasseDeEstrela,
+  opcoesDePreset,
   opcoesDeTendencia,
   opcoesDeTipoDeCorpo,
   opcoesDeTipoDeRota,
 } from "../shared/catalogo.js";
-import { el } from "../shared/dom.js";
+import { el, limpar } from "../shared/dom.js";
 import { notificarErro } from "../shared/notificacoes.js";
 
 export const METRICAS = [
@@ -70,14 +71,36 @@ function campoBooleano(rotulo, nome, marcado) {
   return el("label", { classe: "camada-item" }, [entrada, el("span", { texto: rotulo })]);
 }
 
+/**
+ * Botão de sorteio com estado de trabalho.
+ *
+ * O sorteio é uma ida ao servidor: sem sinal de que está em curso, a espera
+ * parece travamento e o usuário clica de novo. Enquanto a resposta não chega o
+ * botão fica desabilitado, então cliques repetidos não empilham requisições.
+ */
 function botaoSortear(titulo, aoClicar) {
-  return el("button", {
+  const botao = el("button", {
     classe: "botao botao--sortear",
     type: "button",
     texto: "Sortear",
     title: titulo,
-    onClick: aoClicar,
   });
+
+  botao.addEventListener("click", async () => {
+    if (botao.disabled) return;
+    botao.disabled = true;
+    botao.classList.add("botao--ocupado");
+    botao.textContent = "Sorteando…";
+    try {
+      await aoClicar();
+    } finally {
+      botao.disabled = false;
+      botao.classList.remove("botao--ocupado");
+      botao.textContent = "Sortear";
+    }
+  });
+
+  return botao;
 }
 
 function texto(formulario, nome) {
@@ -107,6 +130,21 @@ export function formularioSistema(sistema = {}, { regioes = [], faccoes = [] } =
   const opcoesRegiao = [["", "— sem região —"], ...regioes.map((r) => [r.id, r.name])];
   const opcoesFaccao = [["", "— independente —"], ...faccoes.map((f) => [f.id, f.name])];
 
+  // O preset dá vocação ao sorteio: um bastião militar não sai com a mesma
+  // ficha de um entreposto comercial.
+  const seletorDePreset = el("select", {
+    classe: "sorteio__preset",
+    name: "preset_de_geracao",
+    "aria-label": "Vocação do sistema sorteado",
+  });
+  for (const [valor, texto] of opcoesDePreset("— vocação aleatória —")) {
+    seletorDePreset.appendChild(el("option", { value: valor, texto }));
+  }
+
+  // Um sorteio pode cair num sistema desabitado, que não tem métrica nenhuma:
+  // sem esta linha, a tela não muda e parece que o botão não funcionou.
+  const resultadoDoSorteio = el("span", { classe: "campo__ajuda" });
+
   const elemento = el("form", { classe: "formulario", onSubmit: (e) => e.preventDefault() }, [
     campoTexto("Nome", "name", sistema.name || "", {
       acessorio: botaoSortear("Sortear um nome", async () => {
@@ -125,16 +163,21 @@ export function formularioSistema(sistema = {}, { regioes = [], faccoes = [] } =
     campoArea("Aviso em destaque", "notice_text", sistema.notice_text || ""),
     el("div", { classe: "secao__titulo rotulo secao__titulo--acao" }, [
       el("span", { texto: "Métricas (0 a 100)" }),
-      botaoSortear("Sortear população e métricas coerentes entre si", async () => {
-        try {
-          const proposta = await api.proporSistema();
-          definir(elemento, "population", proposta.population);
-          for (const [chave] of METRICAS) definir(elemento, chave, proposta[chave]);
-        } catch (erro) {
-          notificarErro(erro);
-        }
-      }),
+      el("div", { classe: "sorteio" }, [
+        seletorDePreset,
+        botaoSortear("Sortear população e métricas coerentes entre si", async () => {
+          try {
+            const proposta = await api.proporSistema({ preset: seletorDePreset.value });
+            definir(elemento, "population", proposta.population);
+            for (const [chave] of METRICAS) definir(elemento, chave, proposta[chave]);
+            resultadoDoSorteio.textContent = descreverSorteio(proposta);
+          } catch (erro) {
+            notificarErro(erro);
+          }
+        }),
+      ]),
     ]),
+    resultadoDoSorteio,
     ...METRICAS.map(([chave, rotulo]) => campoDeMetrica(chave, rotulo, sistema[chave])),
     campoBooleano("Sistema classificado", "is_classified", sistema.is_classified),
   ]);
@@ -157,6 +200,15 @@ export function formularioSistema(sistema = {}, { regioes = [], faccoes = [] } =
   };
 }
 
+/** Resumo do que o sorteio devolveu, inclusive quando o resultado é vazio. */
+function descreverSorteio(proposta) {
+  const partes = [proposta.preset_nome || "Vocação aleatória", proposta.perfil_nome];
+  if (proposta.economy === null || proposta.economy === undefined) {
+    partes.push("sem métricas — sistema desabitado");
+  }
+  return `Sorteado: ${partes.filter(Boolean).join(" · ")}`;
+}
+
 /** Campo de métrica que mostra, embaixo, o que o valor digitado significa. */
 function campoDeMetrica(chave, rotulo, valor) {
   const legenda = el("span", { classe: "campo__ajuda" });
@@ -175,11 +227,22 @@ function campoDeMetrica(chave, rotulo, valor) {
 
 /** Formulário de corpo celeste (diálogo de criar/editar). */
 export function formularioCorpo(corpo = {}, { corposDoSistema = [] } = {}) {
-  const opcoesOrbita = [
-    ["", CENTRO_DO_SISTEMA],
-    ...corposDoSistema
-      .filter((item) => item.id !== corpo.id && item.body_type !== "moon")
-      .map((item) => [item.id, item.name]),
+  const candidatos = corposDoSistema.filter(
+    (item) => item.id !== corpo.id && item.body_type !== "moon"
+  );
+  const estrelas = candidatos.filter((item) => item.body_type === "star");
+
+  // No centro do sistema só ficam estrelas. Enquanto não houver nenhuma, o
+  // centro continua disponível — é onde o mestre começa um sistema do zero.
+  const centroDisponivel = (tipo) => tipo === "star" || estrelas.length === 0;
+
+  // Estrela nasce no centro; o resto nasce orbitando a estrela principal.
+  const orbitaPadraoDe = (tipo) =>
+    corpo.parent_body_id ?? (centroDisponivel(tipo) ? "" : String(estrelas[0].id));
+
+  const opcoesDeOrbita = (tipo) => [
+    ...(centroDisponivel(tipo) ? [["", CENTRO_DO_SISTEMA]] : []),
+    ...candidatos.map((item) => [item.id, item.name]),
   ];
 
   const selecaoDeClasse = campoSelecao(
@@ -194,7 +257,12 @@ export function formularioCorpo(corpo = {}, { corposDoSistema = [] } = {}) {
     campoTexto("Nome", "name", corpo.name || ""),
     campoSelecao("Tipo", "body_type", opcoesDeTipoDeCorpo(), corpo.body_type || "planet"),
     selecaoDeClasse,
-    campoSelecao("Orbita", "parent_body_id", opcoesOrbita, corpo.parent_body_id),
+    campoSelecao(
+      "Orbita",
+      "parent_body_id",
+      opcoesDeOrbita(corpo.body_type || "planet"),
+      orbitaPadraoDe(corpo.body_type || "planet")
+    ),
     el("div", { classe: "grade-dupla" }, [
       campoTexto("Ordem orbital", "orbital_order", corpo.orbital_order ?? 0, { tipo: "number" }),
       campoTexto("Raio orbital (UA)", "orbital_radius_au", corpo.orbital_radius_au ?? "", {
@@ -208,13 +276,33 @@ export function formularioCorpo(corpo = {}, { corposDoSistema = [] } = {}) {
     campoBooleano("Colonizado", "is_colonized", corpo.is_colonized),
   ]);
 
-  // Classe espectral só faz sentido para estrelas.
+  // Classe espectral só faz sentido para estrelas; e trocar o tipo pode tirar
+  // (ou devolver) o centro do sistema da lista de órbitas possíveis.
   const seletorDeTipo = elemento.querySelector('[name="body_type"]');
-  const sincronizarClasse = () => {
-    selecaoDeClasse.hidden = seletorDeTipo.value !== "star";
+  const seletorDeOrbita = elemento.querySelector('[name="parent_body_id"]');
+
+  // Enquanto o usuário não escolhe a órbita à mão, ela acompanha o tipo.
+  let orbitaEscolhidaAMao = false;
+  seletorDeOrbita.addEventListener("change", () => {
+    orbitaEscolhidaAMao = true;
+  });
+
+  const sincronizarTipo = () => {
+    const tipo = seletorDeTipo.value;
+    selecaoDeClasse.hidden = tipo !== "star";
+
+    const desejado = orbitaEscolhidaAMao ? seletorDeOrbita.value : orbitaPadraoDe(tipo);
+    const opcoes = opcoesDeOrbita(tipo);
+    limpar(seletorDeOrbita);
+    for (const [valor, texto] of opcoes) {
+      seletorDeOrbita.appendChild(el("option", { value: valor, texto }));
+    }
+    const aindaVale = opcoes.some(([valor]) => String(valor) === String(desejado));
+    seletorDeOrbita.value = aindaVale ? String(desejado) : String(opcoes[0][0]);
   };
-  seletorDeTipo.addEventListener("change", sincronizarClasse);
-  sincronizarClasse();
+
+  seletorDeTipo.addEventListener("change", sincronizarTipo);
+  sincronizarTipo();
 
   return {
     elemento,
@@ -290,23 +378,24 @@ export function formularioInfluencias(influencias = [], faccoes = []) {
   };
 }
 
-/** Formulário de rota, mostrado ao ligar dois sistemas no mapa. */
+/**
+ * Formulário de rota, mostrado ao ligar dois sistemas no mapa.
+ *
+ * Não há mais escolha de mão dupla: uma rota liga os dois sistemas nos dois
+ * sentidos, sempre. A descrição aparece ao selecionar a rota no mapa.
+ */
 export function formularioRota(rota = {}) {
   const elemento = el("form", { classe: "formulario", onSubmit: (e) => e.preventDefault() }, [
-    campoSelecao("Tipo da rota", "lane_type", opcoesDeTipoDeRota(), rota.lane_type || "cosmic_string"),
-    campoTexto("Observações", "notes", rota.notes || ""),
-    campoBooleano("Mão dupla", "bidirectional", rota.bidirectional ?? true),
+    campoSelecao("Tipo da rota", "lane_type", opcoesDeTipoDeRota(), rota.lane_type || "hyperlane"),
+    campoArea("Descrição", "notes", rota.notes || ""),
   ]);
 
   return {
     elemento,
-    valores() {
-      return {
-        lane_type: texto(elemento, "lane_type"),
-        notes: texto(elemento, "notes"),
-        bidirectional: elemento.querySelector('[name="bidirectional"]').checked,
-      };
-    },
+    valores: () => ({
+      lane_type: texto(elemento, "lane_type"),
+      notes: texto(elemento, "notes"),
+    }),
   };
 }
 

@@ -68,29 +68,36 @@ SISTEMAS = [
 ]
 
 ROTAS = [
-    ("Sol", "Alfa Centauri", "cosmic_string"),
-    ("Sol", "Sirius", "cosmic_string"),
-    ("Sol", "Wolf 359", "cosmic_string"),
-    ("Sol", "Epsilon Eridani", "cosmic_string"),
-    ("Alfa Centauri", "Tau Ceti", "trade_route"),
-    ("Alfa Centauri", "Barnard", "cosmic_string"),
-    ("Alfa Centauri", "Epsilon Eridani", "cosmic_string"),
-    ("Wolf 359", "Procyon", "cosmic_string"),
-    ("Procyon", "Orcus", "trade_route"),
-    ("Orcus", "Ismarus", "unstable"),
-    ("Ismarus", "Styx", "cosmic_string"),
-    ("Tau Ceti", "Delta Draconis", "trade_route"),
-    ("Delta Draconis", "Sigma Draconis", "cosmic_string"),
-    ("Delta Draconis", "Theta Draconis", "cosmic_string"),
-    ("Sigma Draconis", "Theta Draconis", "trade_route"),
-    ("Theta Draconis", "Arcturus", "unstable"),
-    ("Epsilon Eridani", "Vega", "restricted"),
-    ("Vega", "Arcturus", "restricted"),
-    ("Barnard", "Tau Ceti", "cosmic_string"),
+    # (origem, destino, tipo, descrição)
+    ("Sol", "Alfa Centauri", "hyperlane",
+     "A primeira rota aberta pela humanidade, e ainda a mais movimentada do Aglomerado."),
+    ("Sol", "Sirius", "hyperlane", "Trecho de serviço dos estaleiros: reboques têm prioridade."),
+    ("Sol", "Wolf 359", "hyperlane", ""),
+    ("Sol", "Epsilon Eridani", "hyperlane", ""),
+    ("Alfa Centauri", "Tau Ceti", "trade_route",
+     "Corredor de grãos. Comboios saem a cada oito dias, sempre escoltados."),
+    ("Alfa Centauri", "Barnard", "hyperlane", ""),
+    ("Alfa Centauri", "Epsilon Eridani", "hyperlane", ""),
+    ("Wolf 359", "Procyon", "hyperlane", ""),
+    ("Procyon", "Orcus", "trade_route", "Rota operária: a Comuna cobra pedágio em trabalho, não em crédito."),
+    ("Orcus", "Ismarus", "unstable",
+     "Some por dias inteiros sem aviso. Quem tem pressa aceita o risco; quem tem carga, não."),
+    ("Ismarus", "Styx", "hyperlane", ""),
+    ("Tau Ceti", "Delta Draconis", "trade_route", "Onde o Consórcio compra o que a República planta."),
+    ("Delta Draconis", "Sigma Draconis", "hyperlane", ""),
+    ("Delta Draconis", "Theta Draconis", "hyperlane", ""),
+    ("Sigma Draconis", "Theta Draconis", "trade_route", ""),
+    ("Theta Draconis", "Arcturus", "unstable", "O atalho do Véu. Metade das naves que somem sumiu aqui."),
+    ("Epsilon Eridani", "Vega", "restricted",
+     "Interditada pela Autoridade Solar. Aproximação sem autorização é tratada como hostil."),
+    ("Vega", "Arcturus", "restricted", "Nenhuma informação liberada sobre este trecho."),
+    ("Barnard", "Tau Ceti", "hyperlane", ""),
 ]
 
 CORPOS_DE_SOL = [
-    # (nome, tipo, ordem, colonizado, tags, lua de)
+    # (nome, tipo, ordem, colonizado, tags, orbita)
+    # `orbita` vazio significa "orbita a estrela do sistema" — no centro do
+    # sistema só ficam as estrelas.
     ("Mercúrio", "planet", 1, 0, ["Sem atmosfera", "Mundo escaldado"], None),
     ("Vênus", "planet", 2, 1, ["Efeito estufa", "Mundo velado"], None),
     ("Terra", "planet", 3, 1, ["Mundo oceânico", "Berço da humanidade"], None),
@@ -178,6 +185,7 @@ def semear(conn, forcar=False):
             faccoes[chave] = cursor.lastrowid
 
         sistemas = {}
+        estrelas_principais = {}
         for nome, x, y, regiao, faccao, classes, populacao, lore in SISTEMAS:
             classificado = 1 if nome == "Vega" else 0
             cursor = conn.execute(
@@ -211,7 +219,7 @@ def semear(conn, forcar=False):
             # A, B, C quando o sistema é múltiplo.
             for indice, classe in enumerate(classes):
                 nome_da_estrela = nome if len(classes) == 1 else f"{nome} {chr(65 + indice)}"
-                conn.execute(
+                cursor = conn.execute(
                     """
                     INSERT INTO celestial_body
                         (system_id, name, body_type, star_class, orbital_order)
@@ -219,16 +227,21 @@ def semear(conn, forcar=False):
                     """,
                     (sistemas[nome], nome_da_estrela, classe, indice),
                 )
+                if indice == 0:
+                    estrelas_principais[nome] = cursor.lastrowid
 
         conn.execute(
             "UPDATE star_system SET notice_text = ? WHERE name = 'Sol'",
             ("Por ordem da Autoridade Solar Conjunta — trânsito não autorizado será interceptado.",),
         )
 
-        for origem, destino, tipo in ROTAS:
+        for origem, destino, tipo, descricao in ROTAS:
             conn.execute(
-                "INSERT INTO lane (system_a_id, system_b_id, lane_type) VALUES (?, ?, ?)",
-                (sistemas[origem], sistemas[destino], tipo),
+                """
+                INSERT INTO lane (system_a_id, system_b_id, lane_type, notes)
+                VALUES (?, ?, ?, ?)
+                """,
+                (sistemas[origem], sistemas[destino], tipo, descricao),
             )
 
         corpos = {}
@@ -239,7 +252,14 @@ def semear(conn, forcar=False):
                     (system_id, parent_body_id, name, body_type, orbital_order, is_colonized)
                 VALUES (?, ?, ?, ?, ?, ?)
                 """,
-                (sistemas["Sol"], corpos.get(orbita), nome, tipo, ordem, colonizado),
+                (
+                    sistemas["Sol"],
+                    corpos.get(orbita) or estrelas_principais["Sol"],
+                    nome,
+                    tipo,
+                    ordem,
+                    colonizado,
+                ),
             )
             corpos[nome] = cursor.lastrowid
             for tag in tags:

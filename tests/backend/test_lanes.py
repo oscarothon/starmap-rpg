@@ -19,8 +19,8 @@ def test_cria_rota_entre_dois_sistemas(api, dois_sistemas):
     rota = resposta.get_json()
     assert rota["system_a_id"] == sol
     assert rota["system_b_id"] == centauri
-    assert rota["lane_type"] == "cosmic_string"
-    assert rota["bidirectional"] == 1
+    assert rota["lane_type"] == "hyperlane"
+    assert rota["notes"] == "Corredor principal"
 
 
 def test_rota_nao_pode_ligar_o_sistema_a_ele_mesmo(api, dois_sistemas):
@@ -49,6 +49,17 @@ def test_tipo_de_rota_invalido_e_recusado(api, dois_sistemas):
     sol, centauri = dois_sistemas
     resposta = api.criar_rota(sol, centauri, lane_type="dobra-espacial")
     assert resposta.status_code == 400
+
+
+def test_mao_dupla_saiu_do_modelo(client, api, dois_sistemas):
+    """Rota liga os dois sistemas nos dois sentidos: não há mais o que escolher."""
+    sol, centauri = dois_sistemas
+    rota_id = api.criar_rota(sol, centauri, bidirectional=False).get_json()["id"]
+
+    # O campo é ignorado no lugar de virar erro: payloads antigos continuam
+    # criando rotas, só que sem efeito nenhum.
+    rota = client.get(f"/api/lanes/{rota_id}").get_json()
+    assert rota["bidirectional"] == 1
 
 
 def test_atualiza_e_exclui_rota(client, api, dois_sistemas):

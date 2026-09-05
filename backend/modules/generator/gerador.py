@@ -13,7 +13,12 @@ simulação.
 
 import random
 
-from ..catalog.dados import CLASSES_DE_ESTRELA
+from ..catalog.dados import (
+    ARRANJOS_ESTELARES,
+    CLASSES_DE_ESTRELA,
+    PRESETS_DE_SISTEMA,
+    por_codigo,
+)
 
 # Parâmetros de formação por classe espectral.
 #   zona  — faixa habitável em UA
@@ -83,6 +88,23 @@ METRICAS = ("economy", "industry", "innovation", "information", "stability", "qu
 
 ROMANOS = ("I", "II", "III", "IV", "V", "VI", "VII", "VIII", "IX", "X", "XI", "XII")
 
+# Separação entre as estrelas, em UA, por arranjo. A estreita cabe dentro do
+# que seria a órbita de Mercúrio; a ampla é da ordem do cinturão de Kuiper.
+SEPARACAO_POR_ARRANJO = {
+    "binaria_estreita": (0.05, 0.8),
+    "binaria_ampla": (40, 800),
+    "hierarquica": (60, 2000),
+    "trinaria": (80, 1500),
+}
+
+# Numa binária estreita as duas estrelas somam luz, então a zona habitável e a
+# linha de gelo do par ficam mais longe do que as da primária sozinha.
+FATOR_CIRCUMBINARIO = 1.35
+
+# Classes que servem de companheira: a secundária costuma ser menor que a
+# primária, e um objeto compacto rende boa ambientação.
+CLASSES_DE_COMPANHEIRA = ("K", "M", "ANA_BRANCA", "ANA_MARROM")
+
 # Vocabulário por zona orbital: nome descritivo e tags de ambientação.
 ZONAS = {
     "escaldada": {
@@ -109,6 +131,7 @@ ZONAS = {
 
 TAGS_DE_LUA = ("Sem atmosfera", "Gelo de superfície", "Aquecimento de marés", "Rotação síncrona", "Crateras profundas")
 TAGS_DE_CINTURAO = ("Metais pesados", "Gelo e voláteis", "Órbitas instáveis", "Mineração intensiva")
+TAG_CIRCUMBINARIA = "Órbita circumbinária"
 
 # Sílabas para nomes de sistema — combinam em algo pronunciável em português.
 INICIOS = ("Ka", "Ve", "Tor", "Nya", "Sel", "Cor", "Bra", "Zan", "Mir", "Hel", "Dun", "Ara", "Xen", "Lun", "Ryo", "Tal")
@@ -137,35 +160,116 @@ def gerar_nome(rng):
     return nome
 
 
-def gerar_estrelas(rng, quantidade=None):
-    """Estrelas do sistema. Cerca de metade dos sistemas reais é múltipla."""
+def sortear_arranjo(rng, quantidade=None):
+    """Arranjo estelar compatível com a quantidade de estrelas pedida."""
+    candidatos = [
+        arranjo
+        for arranjo in ARRANJOS_ESTELARES
+        if quantidade is None or quantidade in arranjo["estrelas"]
+    ]
+    # Quantidade fora de qualquer arranjo previsto (5 estrelas, digamos): a
+    # hierárquica é a única que comporta um cortejo arbitrário.
+    if not candidatos:
+        return por_codigo(ARRANJOS_ESTELARES, "hierarquica")
+    return _sortear_por_peso(candidatos, rng)
+
+
+def _quantidade_do_arranjo(arranjo, rng):
+    """Dentro de um arranjo, mais estrelas é progressivamente mais raro."""
+    opcoes = arranjo["estrelas"]
+    for quantidade in opcoes[:-1]:
+        if rng.random() < 0.75:
+            return quantidade
+    return opcoes[-1]
+
+
+def gerar_estrelas(rng, quantidade=None, arranjo=None):
+    """Estrelas do sistema e como elas se organizam entre si.
+
+    Devolve `{"arranjo": codigo, "estrelas": [...]}`. Cada estrela traz a classe
+    espectral e, quando orbita outra (arranjo hierárquico), o índice da
+    hospedeira em `orbita` e a separação em UA — é o que permite gravar a
+    companheira como corpo filho da primária em vez de solta no centro.
+    """
+    escolhido = (
+        por_codigo(ARRANJOS_ESTELARES, arranjo) if arranjo else None
+    ) or sortear_arranjo(rng, quantidade)
     if quantidade is None:
-        sorteio = rng.random()
-        quantidade = 1 if sorteio < 0.58 else (2 if sorteio < 0.9 else 3)
+        quantidade = _quantidade_do_arranjo(escolhido, rng)
 
     principal = _sortear_por_peso(CLASSES_DE_ESTRELA, rng)
-    estrelas = [{"star_class": principal["codigo"], "ordem": 0}]
+    estrelas = [
+        {
+            "star_class": principal["codigo"],
+            "ordem": 0,
+            "orbita": None,
+            "orbital_radius_au": None,
+            "description": "",
+        }
+    ]
 
-    # Companheiras tendem a ser menores que a primária.
-    companheiras = [c for c in CLASSES_DE_ESTRELA if c["codigo"] in ("K", "M", "ANA_BRANCA", "ANA_MARROM")]
+    companheiras = [
+        classe for classe in CLASSES_DE_ESTRELA if classe["codigo"] in CLASSES_DE_COMPANHEIRA
+    ]
+    minimo, maximo = SEPARACAO_POR_ARRANJO.get(escolhido["codigo"], (40, 800))
+
     for indice in range(1, quantidade):
+        # Distribuição logarítmica: separações pequenas são mais comuns que as
+        # extremas dentro da mesma faixa.
+        separacao = minimo * (maximo / minimo) ** rng.random()
+        # Só a hierárquica pendura a companheira na primária; nos demais
+        # arranjos as estrelas dividem o centro do sistema.
+        orbita = 0 if escolhido["codigo"] == "hierarquica" else None
         estrelas.append(
-            {"star_class": _sortear_por_peso(companheiras, rng)["codigo"], "ordem": indice}
+            {
+                "star_class": _sortear_por_peso(companheiras, rng)["codigo"],
+                "ordem": indice,
+                "orbita": orbita,
+                "orbital_radius_au": round(separacao, 2),
+                "description": _descricao_da_companheira(escolhido, separacao),
+            }
         )
-    return estrelas
+
+    return {"arranjo": escolhido["codigo"], "estrelas": estrelas}
 
 
-def gerar_metricas(perfil, rng):
-    """Métricas coerentes com o perfil de ocupação, com variação por eixo."""
+def _descricao_da_companheira(arranjo, separacao):
+    distancia = f"{separacao:.2f} UA" if separacao < 10 else f"{round(separacao)} UA"
+    textos = {
+        "binaria_estreita": f"Companheira próxima, a {distancia} da primária: as duas somam luz no céu dos mundos do par.",
+        "binaria_ampla": f"Companheira distante, a {distancia} da primária, com o próprio cortejo de mundos.",
+        "hierarquica": f"Companheira em órbita da primária, a {distancia}.",
+        "trinaria": f"Terceira estrela do cortejo, a {distancia} da primária.",
+    }
+    return textos.get(arranjo["codigo"], f"Companheira a {distancia} da primária.")
+
+
+def perfis_do_preset(preset):
+    """Perfis de ocupação plausíveis para um preset (todos, quando não há)."""
+    if not preset:
+        return list(PERFIS)
+    permitidos = set(preset.get("perfis") or ())
+    escolhidos = [perfil for perfil in PERFIS if perfil["codigo"] in permitidos]
+    return escolhidos or list(PERFIS)
+
+
+def gerar_metricas(perfil, rng, enfases=None):
+    """Métricas coerentes com o perfil de ocupação, com variação por eixo.
+
+    `enfases` vem do preset e desloca cada eixo em relação ao patamar do perfil:
+    um bastião militar sobe indústria e estabilidade e derruba qualidade de
+    vida sem deixar de ser uma colônia.
+    """
     if perfil["metricas"] is None:
         return {metrica: None for metrica in METRICAS}
 
+    enfases = enfases or {}
     minimo, maximo = perfil["metricas"]
     centro = (minimo + maximo) / 2
     amplitude = (maximo - minimo) / 2
     valores = {}
     for metrica in METRICAS:
-        bruto = rng.gauss(centro, amplitude * 0.55)
+        bruto = rng.gauss(centro, amplitude * 0.55) + enfases.get(metrica, 0)
         valores[metrica] = int(max(0, min(100, round(bruto))))
     return valores
 
@@ -179,18 +283,32 @@ def gerar_populacao(perfil, rng):
     return int(minimo + (maximo - minimo) * expoente)
 
 
-def gerar_sistema(rng=None, com_nome=False):
-    """Proposta completa de atributos de um sistema, sem gravar nada."""
+def gerar_sistema(rng=None, com_nome=False, preset=None):
+    """Proposta completa de atributos de um sistema, sem gravar nada.
+
+    Com `preset` (militar, industrial, capital...), a proposta sai coerente com
+    a vocação escolhida: os perfis de ocupação implausíveis saem do sorteio e as
+    métricas ganham a ênfase do preset.
+    """
     rng = rng or random.Random()
-    perfil = _sortear_por_peso(PERFIS, rng)
+    dados_do_preset = por_codigo(PRESETS_DE_SISTEMA, preset) if preset else None
+    perfil = _sortear_por_peso(perfis_do_preset(dados_do_preset), rng)
+    estrelas = gerar_estrelas(rng)
+    arranjo = por_codigo(ARRANJOS_ESTELARES, estrelas["arranjo"])
 
     proposta = {
+        "preset": dados_do_preset["codigo"] if dados_do_preset else "",
+        "preset_nome": dados_do_preset["nome"] if dados_do_preset else "",
         "perfil": perfil["codigo"],
         "perfil_nome": perfil["nome"],
         "population": gerar_populacao(perfil, rng),
         "is_classified": 1 if rng.random() < 0.05 else 0,
-        "stars": gerar_estrelas(rng),
-        **gerar_metricas(perfil, rng),
+        "arranjo": estrelas["arranjo"],
+        "arranjo_nome": arranjo["nome"] if arranjo else "",
+        "stars": estrelas["estrelas"],
+        **gerar_metricas(
+            perfil, rng, dados_do_preset["enfases"] if dados_do_preset else None
+        ),
     }
     if com_nome:
         proposta["name"] = gerar_nome(rng)
@@ -219,24 +337,97 @@ def _tags(rng, zona, quantidade=(1, 3)):
     return vocabulario[: rng.randint(*quantidade)]
 
 
-def gerar_corpos(estrelas, nome_do_sistema, rng=None, populado=False):
-    """Corpos em órbita, na ordem do raio orbital.
+def hospedeiras(estrelas, arranjo=None):
+    """Índices das estrelas que podem ter mundos próprios.
 
-    Devolve uma lista plana onde cada item pode trazer `filhos` (luas). Os
-    corpos orbitam o centro do sistema; a hierarquia fina (qual estrela) fica a
-    cargo de quem edita depois, porque num sistema múltiplo isso é escolha de
-    ambientação.
+    Numa binária estreita os planetas são circumbinários: giram em volta das
+    duas estrelas, e no modelo ficam pendurados na primária — que é onde o par
+    tem massa. No arranjo hierárquico, as companheiras orbitam a primária longe
+    demais para formar mundos estáveis, então também é ela quem hospeda.
+    """
+    raizes = [
+        indice for indice, estrela in enumerate(estrelas) if estrela.get("orbita") is None
+    ]
+    if not raizes:
+        return []
+    if arranjo in ("binaria_estreita", "hierarquica"):
+        return raizes[:1]
+    return raizes
+
+
+def gerar_corpos(estrelas, nome_do_sistema, rng=None, populado=False, arranjo=None):
+    """Corpos em órbita, distribuídos entre as estrelas do sistema.
+
+    Devolve uma lista plana onde cada item traz `filhos` (luas) e `estrela` — o
+    índice, dentro de `estrelas`, da estrela que ele orbita. Nenhum corpo fica
+    solto no centro do sistema: lá só cabem as estrelas.
+
+    Numa binária ampla ou numa trinária, cada estrela forma o próprio cortejo,
+    com a zona habitável calculada a partir da classe espectral dela.
     """
     rng = rng or random.Random()
     if not estrelas:
         return []
 
-    classe_principal = estrelas[0].get("star_class", "G")
-    parametros = PARAMETROS_DE_FORMACAO.get(classe_principal, PADRAO_DE_FORMACAO)
+    indices = hospedeiras(estrelas, arranjo)
+    if not indices:
+        return []
 
+    circumbinario = arranjo == "binaria_estreita" and len(estrelas) > 1
+    corpos = []
+
+    for indice_da_estrela in indices:
+        estrela = estrelas[indice_da_estrela]
+        parametros = PARAMETROS_DE_FORMACAO.get(
+            estrela.get("star_class", "G"), PADRAO_DE_FORMACAO
+        )
+        if circumbinario:
+            parametros = _afastar(parametros, FATOR_CIRCUMBINARIO)
+
+        base = _nome_base(estrelas, indice_da_estrela, nome_do_sistema, circumbinario)
+        for corpo in _corpos_de_uma_estrela(
+            parametros, base, rng, dividido=len(indices) > 1, circumbinario=circumbinario
+        ):
+            corpo["estrela"] = indice_da_estrela
+            corpos.append(corpo)
+
+    if populado:
+        _marcar_colonizados(corpos, rng)
+    return corpos
+
+
+def _afastar(parametros, fator):
+    """Empurra zona habitável e linha de gelo para fora (luz somada do par)."""
+    interna, externa = parametros["zona"]
+    return {
+        "zona": (interna * fator, externa * fator),
+        "gelo": parametros["gelo"] * fator,
+        "corpos": parametros["corpos"],
+    }
+
+
+def _nome_base(estrelas, indice, nome_do_sistema, circumbinario):
+    """Prefixo dos mundos de uma estrela.
+
+    Com uma hospedeira só — ou com planetas circumbinários, que pertencem ao par
+    inteiro —, os mundos levam o nome do sistema. Com várias, levam o nome da
+    estrela ("Kepler B I" orbita "Kepler B").
+    """
+    if circumbinario or len(estrelas) == 1:
+        return nome_do_sistema
+    estrela = estrelas[indice]
+    return estrela.get("name") or f"{nome_do_sistema} {chr(65 + indice)}"
+
+
+def _corpos_de_uma_estrela(parametros, base, rng, dividido=False, circumbinario=False):
+    """Cortejo de uma estrela, em órbitas crescentes."""
     minimo, maximo = parametros["corpos"]
     quantidade = rng.randint(minimo, maximo)
-    if quantidade == 0:
+    # Repartir os mundos entre várias estrelas, e não multiplicá-los: um
+    # trinário não deve sair com o triplo de planetas de um sistema simples.
+    if dividido:
+        quantidade = round(quantidade * 0.6)
+    if quantidade <= 0:
         return []
 
     # Órbitas crescentes, com espaçamento multiplicativo (lei de Titius-Bode em
@@ -248,11 +439,12 @@ def gerar_corpos(estrelas, nome_do_sistema, rng=None, populado=False):
     for indice in range(quantidade):
         zona = _zona_do_raio(raio, parametros)
         ordem = indice + 1
+        algarismo = ROMANOS[min(indice, len(ROMANOS) - 1)]
 
         if indice == indice_cinturao:
             corpos.append(
                 {
-                    "name": f"Cinturão de {nome_do_sistema}",
+                    "name": f"Cinturão de {base}",
                     "body_type": "belt",
                     "orbital_order": ordem,
                     "orbital_radius_au": round(raio, 3),
@@ -262,22 +454,23 @@ def gerar_corpos(estrelas, nome_do_sistema, rng=None, populado=False):
                 }
             )
         else:
-            gigante = zona == "gelada"
-            corpo = {
-                "name": f"{nome_do_sistema} {ROMANOS[min(indice, len(ROMANOS) - 1)]}",
-                "body_type": "planet",
-                "orbital_order": ordem,
-                "orbital_radius_au": round(raio, 3),
-                "description": rng.choice(ZONAS[zona]["descricoes"]),
-                "tags": _tags(rng, zona),
-                "filhos": _gerar_luas(rng, f"{nome_do_sistema} {ROMANOS[min(indice, len(ROMANOS) - 1)]}", gigante),
-            }
-            corpos.append(corpo)
+            tags = _tags(rng, zona)
+            if circumbinario:
+                tags.append(TAG_CIRCUMBINARIA)
+            corpos.append(
+                {
+                    "name": f"{base} {algarismo}",
+                    "body_type": "planet",
+                    "orbital_order": ordem,
+                    "orbital_radius_au": round(raio, 3),
+                    "description": rng.choice(ZONAS[zona]["descricoes"]),
+                    "tags": tags,
+                    "filhos": _gerar_luas(rng, f"{base} {algarismo}", zona == "gelada"),
+                }
+            )
 
         raio *= rng.uniform(1.5, 2.4)
 
-    if populado:
-        _marcar_colonizados(corpos, rng)
     return corpos
 
 

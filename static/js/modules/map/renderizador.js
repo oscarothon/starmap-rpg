@@ -16,7 +16,9 @@ export function criarRenderizador({ grupos, canvas, camera, camadas }) {
   let dados = { systems: [], lanes: [], regions: [], factions: [] };
   let porSistema = new Map();
   let nosSistemas = new Map();
+  let nosRotas = new Map();
   let selecionado = null;
+  let rotaSelecionada = null;
   let estrelasFundo = null;
 
   function definirDados(novosDados) {
@@ -72,24 +74,39 @@ export function criarRenderizador({ grupos, canvas, camera, camadas }) {
 
   // --- Rotas ---------------------------------------------------------------
 
+  /**
+   * Cada rota é um grupo com duas linhas: a que se vê e uma faixa transparente
+   * e larga por baixo, que recebe o clique — 1px de traço é fino demais para
+   * acertar com o mouse, e a rota precisa ser selecionável para mostrar a
+   * descrição.
+   */
   function desenharRotas() {
     limpar(grupos.rotas);
+    nosRotas = new Map();
+
     for (const rota of dados.lanes) {
       const a = porSistema.get(rota.system_a_id);
       const b = porSistema.get(rota.system_b_id);
       if (!a || !b) continue;
-      grupos.rotas.appendChild(
+
+      const pontos = { x1: a.x, y1: a.y, x2: b.x, y2: b.y };
+      const no = svg("g", { classe: "rota-grupo", dataset: { rota: rota.id } }, [
+        svg("line", {
+          classe: "rota__area",
+          ...pontos,
+          "vector-effect": "non-scaling-stroke",
+        }),
         svg("line", {
           classe: `rota rota--${rota.lane_type}`,
-          x1: a.x,
-          y1: a.y,
-          x2: b.x,
-          y2: b.y,
+          ...pontos,
           "vector-effect": "non-scaling-stroke",
-          dataset: { rota: rota.id },
-        })
-      );
+        }),
+      ]);
+
+      nosRotas.set(rota.id, no);
+      grupos.rotas.appendChild(no);
     }
+    if (rotaSelecionada !== null) marcarRotaSelecionada(rotaSelecionada);
   }
 
   // --- Sistemas ------------------------------------------------------------
@@ -299,6 +316,13 @@ export function criarRenderizador({ grupos, canvas, camera, camadas }) {
     }
   }
 
+  function marcarRotaSelecionada(id) {
+    rotaSelecionada = id;
+    for (const [rotaId, no] of nosRotas) {
+      no.classList.toggle("rota-grupo--selecionada", rotaId === id);
+    }
+  }
+
   function moverSistema(id, x, y) {
     const sistema = porSistema.get(id);
     if (!sistema) return;
@@ -316,11 +340,13 @@ export function criarRenderizador({ grupos, canvas, camera, camadas }) {
     desenharTudo,
     aplicarTransformacao,
     marcarSelecionado,
+    marcarRotaSelecionada,
     moverSistema,
     get dados() {
       return dados;
     },
     sistemaPorId: (id) => porSistema.get(id),
     noDeSistema: (id) => nosSistemas.get(id),
+    rotaPorId: (id) => dados.lanes.find((rota) => rota.id === id),
   };
 }
