@@ -10,13 +10,17 @@ def test_cria_sistema_com_detalhe_completo(api):
     assert (sistema["x"], sistema["y"]) == (10, -20)
     assert sistema["counts"] == {
         "bodies": 0,
+        "stars": 0,
         "planets": 0,
         "satellites": 0,
         "stations": 0,
+        "belts": 0,
         "colonized": 0,
         "lanes": 0,
     }
     assert sistema["bodies"] == []
+    assert sistema["stars"] == []
+    assert sistema["star_summary"] == "Sistema sem estrela registrada"
     assert sistema["influences"] == []
 
 

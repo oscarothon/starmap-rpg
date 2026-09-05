@@ -126,3 +126,11 @@ def _register_pages(app):
     @app.get("/indice")
     def pagina_indice():
         return render_template("index.html")
+
+    @app.get("/glossario")
+    def pagina_glossario():
+        return render_template("glossario.html")
+
+    @app.get("/administracao")
+    def pagina_administracao():
+        return render_template("administracao.html")

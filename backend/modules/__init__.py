@@ -8,12 +8,14 @@ basta criar a pasta e adicionar o nome em FEATURE_MODULES.
 import importlib
 
 FEATURE_MODULES = (
+    "catalog",
     "regions",
     "factions",
     "systems",
     "lanes",
     "map",
     "index",
+    "generator",
 )
 
 

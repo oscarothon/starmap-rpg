@@ -3,7 +3,7 @@
 Documento canônico de progresso do Mapa Estelar. Atualize a cada sessão de
 trabalho: o que ficou pronto, o que ficou pendente e o que espera decisão.
 
-Última atualização: **2026-09-04**
+Última atualização: **2026-09-05**
 
 ---
 
@@ -58,6 +58,34 @@ cor e URL contra injeção de CSS e `javascript:`, limites de tamanho em todo te
 livre, handler global de erro sem stack trace, `FLASK_DEBUG` desligado por
 padrão, cabeçalhos de segurança (CSP, HSTS, nosniff, X-Frame-Options) e a trava
 `STARMAP_SOMENTE_LEITURA`.
+
+## Aprimoramento dos componentes — concluído (2026-09-05)
+
+**Modelo:** estrelas passaram a ser corpos celestes com classe espectral
+própria (migration `0002`), o que destravou binários e trinários e a hierarquia
+real de órbitas. As colunas `star_count`/`star_type` viraram legado morto.
+
+**Catálogo e glossário:** `backend/modules/catalog/dados.py` centraliza classes
+de estrela (15, da anã vermelha ao buraco negro), tipos de corpo e de rota,
+níveis de região, faixas de população e as seis métricas com o significado de
+cada uma das cinco faixas. A página `/glossario` renderiza tudo isso, e os
+mesmos dados alimentam os dropdowns.
+
+**Geração aleatória** (`backend/modules/generator/`): propostas de população e
+métricas coerentes entre si (um sistema desabitado não sai com economia de
+metrópole), sorteio de nome, e geração de corpos que respeita a zona habitável
+da estrela — gigantes gasosos só além da linha de gelo, luas concentradas neles,
+cinturão eventual.
+
+**Interface:** administração de regiões e facções em `/administracao` (com aviso
+de impacto na exclusão); diagrama do sistema reescrito, com múltiplas estrelas,
+baricentro, hierarquia e nome do corpo no mouseover; corpos celestes clicáveis
+na lista e no diagrama, abrindo a ficha — que é onde os pontos de interesse
+entram depois; população sem barra, só número e faixa; e a órbita vazia agora se
+chama "centro do sistema".
+
+**Proteção de dados:** o seed passou a recusar apagar bancos que contenham
+sistemas criados à mão (exige `--forcar`).
 
 ---
 

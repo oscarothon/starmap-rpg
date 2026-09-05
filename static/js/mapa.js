@@ -8,6 +8,7 @@ import { criarCamera, limitesDe } from "./modules/map/camera.js";
 import { criarGerenciadorCamadas } from "./modules/map/camadas.js";
 import { criarRenderizador } from "./modules/map/renderizador.js";
 import { api } from "./modules/shared/api.js";
+import { carregarCatalogo } from "./modules/shared/catalogo.js";
 import { abrirDialogo, confirmar } from "./modules/shared/dialogo.js";
 import { el, limpar } from "./modules/shared/dom.js";
 import { notificar, notificarErro, notificarSucesso } from "./modules/shared/notificacoes.js";
@@ -568,6 +569,9 @@ async function iniciar() {
   registrarCamadas();
   ligarInterface();
   redimensionarCanvas();
+  // O catálogo alimenta os dropdowns e as cores das estrelas: precisa estar
+  // carregado antes de qualquer formulário abrir.
+  await carregarCatalogo();
   await carregarMapa({ enquadrar: true });
   await abrirSistemaDaUrl();
 }

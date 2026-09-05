@@ -456,30 +456,180 @@
   border-bottom: 1px solid var(--cor-borda);
 }
 
-/* Diagrama orbital */
+/* Mapa do sistema: estrelas, órbitas e hierarquia */
 
-.orbital {
+.mapa-sistema {
   width: 100%;
-  height: 90px;
   margin-bottom: 8px;
+  overflow: visible;
 }
 
-.orbital__estrela {
-  fill: var(--cor-alerta);
+.mapa-sistema__orbita {
+  stroke: rgba(160, 200, 180, 0.22);
+  stroke-width: 1;
 }
 
-.orbital__corpo {
-  fill: #9fb6a4;
+.mapa-sistema__fio {
+  stroke: rgba(160, 200, 180, 0.3);
+  stroke-width: 1;
+  stroke-dasharray: 2 2;
+}
+
+.mapa-sistema__baricentro {
+  stroke: rgba(232, 177, 58, 0.5);
+  stroke-width: 1;
+  stroke-dasharray: 3 2;
+}
+
+.mapa-sistema__corpo {
   cursor: pointer;
+  outline: none;
 }
 
-.orbital__corpo--colonizado {
+.mapa-sistema__marcador {
+  fill: #9fb6a4;
+  stroke: rgba(4, 10, 7, 0.8);
+  stroke-width: 0.5;
+  transition: fill var(--transicao);
+}
+
+.mapa-sistema__cinturao {
+  stroke: #9fb6a4;
+  stroke-width: 3;
+  stroke-dasharray: 2 3;
+}
+
+.mapa-sistema__corpo--colonizado .mapa-sistema__marcador {
   fill: var(--cor-destaque);
 }
 
-.orbital__linha {
-  stroke: rgba(160, 200, 180, 0.25);
-  stroke-width: 1;
+.mapa-sistema__corpo:hover .mapa-sistema__marcador,
+.mapa-sistema__corpo:focus .mapa-sistema__marcador {
+  fill: var(--cor-texto-forte);
+}
+
+.mapa-sistema__estrela {
+  stroke: rgba(4, 10, 7, 0.7);
+  stroke-width: 0.5;
+}
+
+.mapa-sistema__brilho {
+  opacity: 0.22;
+}
+
+.mapa-sistema__corpo:hover .mapa-sistema__brilho,
+.mapa-sistema__corpo:focus .mapa-sistema__brilho {
+  opacity: 0.45;
+}
+
+.mapa-sistema__rotulo-ancora {
+  font-family: var(--fonte-mono);
+  font-size: 8px;
+  fill: var(--cor-texto-fraco);
+  text-transform: uppercase;
+}
+
+/* Nome do corpo sob o cursor: aparece e some suavemente. */
+.mapa-sistema__dica {
+  font-family: var(--fonte-mono);
+  font-size: 10px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  fill: var(--cor-destaque);
+  opacity: 0;
+  transition: opacity 180ms ease;
+  pointer-events: none;
+}
+
+.mapa-sistema__dica--visivel {
+  opacity: 1;
+}
+
+/* Ficha de um corpo celeste */
+
+.ficha-corpo__nome {
+  margin: 10px 0 2px;
+  font-size: 20px;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--cor-texto-forte);
+}
+
+.ficha-corpo__tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+  margin: 10px 0 14px;
+}
+
+.etiqueta {
+  padding: 2px 8px;
+  font-family: var(--fonte-mono);
+  font-size: 10px;
+  letter-spacing: 0.08em;
+  color: var(--cor-texto);
+  border: 1px solid var(--cor-borda);
+  background: rgba(20, 36, 26, 0.7);
+}
+
+.botao--voltar {
+  padding: 4px 8px;
+  font-size: 10px;
+}
+
+/* População sem barra: o número basta */
+
+.populacao {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 16px;
+}
+
+.populacao__valor {
+  font-family: var(--fonte-mono);
+  font-size: 24px;
+  color: var(--cor-texto-forte);
+}
+
+.acoes-em-linha {
+  display: flex;
+  gap: 6px;
+  margin-bottom: 4px;
+}
+
+.secao__titulo--acao {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.botao--sortear {
+  padding: 5px 10px;
+  font-size: 10px;
+}
+
+.campo__linha {
+  display: flex;
+  gap: 6px;
+}
+
+.campo__linha input {
+  flex: 1;
+  min-width: 0;
+}
+
+.campo__ajuda {
+  margin-top: 3px;
+  font-size: 11px;
+  line-height: 1.4;
+  color: var(--cor-texto-fraco);
+}
+
+.campo--estrela[hidden] {
+  display: none;
 }
 
 /* Lista de corpos celestes */
@@ -493,6 +643,28 @@
 
 .corpo--lua {
   padding-left: 22px;
+}
+
+.corpo--clicavel {
+  cursor: pointer;
+}
+
+.corpo--clicavel:hover {
+  background: rgba(201, 230, 75, 0.06);
+}
+
+.corpo--clicavel:focus-visible {
+  outline: 1px solid var(--cor-destaque-suave);
+  outline-offset: -1px;
+}
+
+.corpo__texto {
+  min-width: 0;
+}
+
+.corpo--estrela .corpo__marcador {
+  background: var(--cor-alerta);
+  box-shadow: 0 0 6px rgba(232, 177, 58, 0.6);
 }
 
 .corpo__marcador {

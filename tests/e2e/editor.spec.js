@@ -139,7 +139,7 @@ test("edita campos do sistema pelo painel lateral", async ({ page }) => {
 
   await page.locator("#painel-sistema .botao--primario").click();
   await page.locator('#painel-sistema [name="lore_text"]').fill("Reescrito pelo teste.");
-  await page.locator('#painel-sistema [name="star_type"]').fill("Anã vermelha M3V");
+  await page.locator('#painel-sistema [name="population"]').fill("4200");
   await page.locator("#painel-sistema .dialogo__acoes .botao--primario").click();
 
   await expect(page.locator(".painel-sistema__lore")).toHaveText("Reescrito pelo teste.");

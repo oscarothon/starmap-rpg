@@ -1,7 +1,11 @@
 """Popula o banco com um cenário de exemplo (útil em desenvolvimento e nos E2E).
 
-Uso:  python -m backend.seed [caminho_do_banco]
-O banco é limpo antes de receber os dados.
+Uso:  python -m backend.seed [caminho_do_banco] [--forcar]
+
+O banco é **limpo** antes de receber os dados. Por isso o comando se recusa a
+rodar quando encontra conteúdo que não veio deste arquivo — sistemas criados à
+mão pelo mestre, por exemplo. Nesse caso, `--forcar` é obrigatório e assume-se
+que a perda é intencional.
 """
 
 import sys
@@ -28,38 +32,38 @@ FACCOES = [
 ]
 
 SISTEMAS = [
-    # (nome, x, y, região, facção, estrelas, tipo, população, lore)
-    ("Sol", 0, 0, "solar", "autoridade", 1, "Anã amarela G2V", 14_000_000_000,
+    # (nome, x, y, região, facção, classes das estrelas, população, lore)
+    ("Sol", 0, 0, "solar", "autoridade", ("G",), 14_000_000_000,
      "Berço da humanidade. Todas as rotas ainda começam aqui."),
-    ("Alfa Centauri", 120, -40, "solar", "republica", 3, "Sistema trinário G2V/K1V/M5V", 9_400_000_000,
+    ("Alfa Centauri", 120, -40, "solar", "republica", ("G", "K", "M"), 9_400_000_000,
      "A primeira colônia extrassolar. O centro da civilização para onde tudo converge."),
-    ("Sirius", -95, -110, "solar", "autoridade", 2, "Anã branca A1V", 2_100_000_000,
+    ("Sirius", -95, -110, "solar", "autoridade", ("A", "ANA_BRANCA"), 2_100_000_000,
      "Estaleiros orbitais e a maior doca seca do Aglomerado Local."),
-    ("Tau Ceti", 165, 90, "solar", "republica", 1, "Anã amarela G8V", 3_800_000_000,
+    ("Tau Ceti", 165, 90, "solar", "republica", ("G",), 3_800_000_000,
      "Celeiro agrícola das colônias interiores."),
-    ("Epsilon Eridani", 60, -130, "solar", "autoridade", 1, "Anã laranja K2V", 780_000_000,
+    ("Epsilon Eridani", 60, -130, "solar", "autoridade", ("K",), 780_000_000,
      "Posto avançado de escuta da Autoridade Solar."),
-    ("Wolf 359", -60, 30, "solar", None, 1, "Anã vermelha M6V", 12_000,
+    ("Wolf 359", -60, 30, "solar", None, ("M",), 12_000,
      "Pouco mais que uma estação de reabastecimento."),
-    ("Procyon", -180, 60, "solar", "comuna", 2, "Subgigante F5IV", 1_500_000_000,
+    ("Procyon", -180, 60, "solar", "comuna", ("F", "ANA_BRANCA"), 1_500_000_000,
      "Onde a Comuna declarou a Primeira Carta das Estrelas Livres."),
-    ("Barnard", 95, 45, "solar", None, 1, "Anã vermelha M4V", 340_000,
+    ("Barnard", 95, 45, "solar", None, ("M",), 340_000,
      "Refúgio de contrabandistas, oficialmente desabitado."),
-    ("Delta Draconis", 40, 230, "draconis", "consorcio", 1, "Gigante G9III", 5_600_000_000,
+    ("Delta Draconis", 40, 230, "draconis", "consorcio", ("GIGANTE_VERMELHA",), 5_600_000_000,
      "Sede corporativa do Consórcio, construída dentro de um asteroide."),
-    ("Sigma Draconis", 175, 260, "draconis", "consorcio", 1, "Anã amarela G9V", 2_200_000_000,
+    ("Sigma Draconis", 175, 260, "draconis", "consorcio", ("G",), 2_200_000_000,
      "Refinarias em órbita cobrem o céu de todos os mundos internos."),
-    ("Theta Draconis", 250, 195, "draconis", "consorcio", 2, "Binária F8V", 640_000_000,
+    ("Theta Draconis", 250, 195, "draconis", "consorcio", ("F", "K"), 640_000_000,
      "Disputada entre o Consórcio e mineradoras independentes."),
-    ("Orcus", -280, -30, "draconis", "comuna", 1, "Anã vermelha M2V", 89_000_000,
+    ("Orcus", -280, -30, "draconis", "comuna", ("M",), 89_000_000,
      "Colônia penal reconvertida em cooperativa mineradora."),
-    ("Ismarus", -350, -95, "veu", "veu", 1, "Anã laranja K5V", 410_000_000,
+    ("Ismarus", -350, -95, "veu", "veu", ("K",), 410_000_000,
      "Primeiro entreposto da Companhia do Véu."),
-    ("Styx", -395, 40, "veu", "veu", 1, "Anã branca DA", 22_000_000,
+    ("Styx", -395, 40, "veu", "veu", ("ANA_BRANCA",), 22_000_000,
      "O farol do Véu: sem ele, ninguém atravessa a fronteira."),
-    ("Vega", 300, -140, "veu", None, 1, "Anã branca A0V", 0,
+    ("Vega", 300, -140, "veu", None, ("A",), 0,
      "Sistema classificado. Nenhuma informação liberada."),
-    ("Arcturus", 380, -20, "veu", "veu", 1, "Gigante vermelha K1III", 1_100_000_000,
+    ("Arcturus", 380, -20, "veu", "veu", ("GIGANTE_VERMELHA",), 1_100_000_000,
      "Última parada antes do vazio interestelar."),
 ]
 
@@ -112,9 +116,35 @@ INFLUENCIAS = {
 }
 
 
-def semear(conn):
+class ConteudoProprioEncontrado(RuntimeError):
+    """O banco tem dados que o seed não criou e apagaria sem aviso."""
+
+
+def conteudo_proprio(conn):
+    """Sistemas presentes no banco que não fazem parte do cenário de exemplo."""
+    try:
+        existentes = {
+            row["name"] for row in conn.execute("SELECT name FROM star_system").fetchall()
+        }
+    except Exception:
+        return []  # banco ainda sem schema
+    return sorted(existentes - {sistema[0] for sistema in SISTEMAS})
+
+
+def semear(conn, forcar=False):
     """Limpa e recria o cenário de exemplo."""
     apply_migrations(conn)
+
+    proprios = conteudo_proprio(conn)
+    if proprios and not forcar:
+        raise ConteudoProprioEncontrado(
+            "O banco tem "
+            f"{len(proprios)} sistema(s) que não vieram do cenário de exemplo "
+            f"({', '.join(proprios[:5])}"
+            f"{'...' if len(proprios) > 5 else ''}). "
+            "Semear apagaria tudo. Faça uma cópia do arquivo e rode de novo com "
+            "--forcar se a perda for intencional."
+        )
 
     with conn:
         for tabela in (
@@ -148,15 +178,15 @@ def semear(conn):
             faccoes[chave] = cursor.lastrowid
 
         sistemas = {}
-        for nome, x, y, regiao, faccao, estrelas, tipo, populacao, lore in SISTEMAS:
+        for nome, x, y, regiao, faccao, classes, populacao, lore in SISTEMAS:
             classificado = 1 if nome == "Vega" else 0
             cursor = conn.execute(
                 """
                 INSERT INTO star_system
-                    (name, x, y, region_id, sovereign_faction_id, star_count, star_type,
+                    (name, x, y, region_id, sovereign_faction_id,
                      population, lore_text, is_classified, economy, industry, innovation,
                      information, stability, quality_of_life)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                 """,
                 (
                     nome,
@@ -164,8 +194,6 @@ def semear(conn):
                     y,
                     regioes[regiao],
                     faccoes.get(faccao),
-                    estrelas,
-                    tipo,
                     populacao,
                     lore,
                     classificado,
@@ -178,6 +206,19 @@ def semear(conn):
                 ),
             )
             sistemas[nome] = cursor.lastrowid
+
+            # As estrelas são corpos celestes: uma linha por estrela, nomeadas
+            # A, B, C quando o sistema é múltiplo.
+            for indice, classe in enumerate(classes):
+                nome_da_estrela = nome if len(classes) == 1 else f"{nome} {chr(65 + indice)}"
+                conn.execute(
+                    """
+                    INSERT INTO celestial_body
+                        (system_id, name, body_type, star_class, orbital_order)
+                    VALUES (?, ?, 'star', ?, ?)
+                    """,
+                    (sistemas[nome], nome_da_estrela, classe, indice),
+                )
 
         conn.execute(
             "UPDATE star_system SET notice_text = ? WHERE name = 'Sol'",
@@ -228,9 +269,15 @@ def _metrica(nome, fator):
 
 def main(argv=None):
     argv = argv if argv is not None else sys.argv[1:]
-    conn = connect(argv[0] if argv else None)
+    forcar = "--forcar" in argv
+    caminhos = [arg for arg in argv if not arg.startswith("--")]
+
+    conn = connect(caminhos[0] if caminhos else None)
     try:
-        resumo = semear(conn)
+        resumo = semear(conn, forcar=forcar)
+    except ConteudoProprioEncontrado as erro:
+        print(f"Nada foi apagado. {erro}")
+        return 1
     finally:
         conn.close()
     print(

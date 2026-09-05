@@ -1,0 +1,51 @@
+<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Regiões e Facções</title>
+    <link rel="stylesheet" href="/static/css/theme.css" />
+    <link rel="stylesheet" href="/static/css/paginas.css" />
+  </head>
+  <body class="pagina">
+    <header class="pagina__topo">
+      <div>
+        <h1 class="pagina__titulo">Regiões e Facções</h1>
+        <span class="rotulo" id="admin-resumo">carregando…</span>
+      </div>
+      <a class="botao" href="/">Voltar ao mapa · ESC</a>
+    </header>
+
+    <main class="pagina__conteudo admin">
+      <section class="secao">
+        <div class="secao__cabecalho-linha">
+          <h2 class="secao__cabecalho">Regiões</h2>
+          <button class="botao botao--primario" id="botao-nova-regiao" type="button">
+            + Nova região
+          </button>
+        </div>
+        <p class="secao__resumo">
+          A hierarquia geográfica do mapa. Uma região pode ficar dentro de outra — os
+          rótulos aparecem no mapa conforme o zoom.
+        </p>
+        <div id="lista-regioes"></div>
+      </section>
+
+      <section class="secao">
+        <div class="secao__cabecalho-linha">
+          <h2 class="secao__cabecalho">Facções</h2>
+          <button class="botao botao--primario" id="botao-nova-faccao" type="button">
+            + Nova facção
+          </button>
+        </div>
+        <p class="secao__resumo">
+          Nações, blocos e organizações. A cor identifica a facção no mapa, na camada de
+          influência e no equilíbrio de poder dos sistemas.
+        </p>
+        <div id="lista-faccoes"></div>
+      </section>
+    </main>
+
+    <script type="module" src="/static/js/administracao.js"></script>
+  </body>
+</html>

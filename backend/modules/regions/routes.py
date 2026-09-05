@@ -24,6 +24,23 @@ blueprint = build_crud_blueprint(
 )
 
 
+@blueprint.get("/<int:region_id>/impact")
+def impacto(region_id):
+    """O que a exclusão afeta — alimenta o diálogo de confirmação."""
+    conn = get_db()
+    REGIONS.get(conn, region_id)
+    return jsonify(
+        {
+            "systems": conn.execute(
+                "SELECT COUNT(*) AS total FROM star_system WHERE region_id = ?", (region_id,)
+            ).fetchone()["total"],
+            "subregions": conn.execute(
+                "SELECT COUNT(*) AS total FROM region WHERE parent_id = ?", (region_id,)
+            ).fetchone()["total"],
+        }
+    )
+
+
 @blueprint.get("/tree")
 def arvore():
     """Regiões em árvore, para navegação e selects encadeados."""

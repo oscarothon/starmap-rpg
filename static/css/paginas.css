@@ -1,0 +1,358 @@
+/* Páginas de leitura e administração: Glossário e Regiões/Facções. */
+
+/* `.pagina` é a classe do próprio <body>: solta a rolagem que o tema trava para
+   o mapa. Como o overflow do body propaga para a viewport, quem rola de fato é
+   o elemento raiz — por isso o JS rola `document.scrollingElement`. */
+.pagina {
+  min-height: 100vh;
+  padding: 14px 16px 40px;
+  overflow-y: auto;
+  background:
+    radial-gradient(ellipse at 20% 0%, rgba(24, 58, 74, 0.35), transparent 55%),
+    var(--cor-fundo-profundo);
+}
+
+.pagina__topo {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  padding-bottom: 10px;
+  margin-bottom: 14px;
+  border-bottom: 1px solid var(--cor-borda);
+}
+
+.pagina__titulo {
+  font-size: 22px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--cor-texto-forte);
+}
+
+.pagina__conteudo {
+  max-width: 1100px;
+  margin: 0 auto;
+}
+
+/* --- Índice do glossário --------------------------------------------------- */
+
+.glossario__indice {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  max-width: 1100px;
+  margin: 0 auto 20px;
+}
+
+/* --- Seções ---------------------------------------------------------------- */
+
+.secao {
+  margin-bottom: 34px;
+  scroll-margin-top: 16px;
+}
+
+.secao__cabecalho {
+  font-size: 15px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--cor-destaque);
+}
+
+.secao__cabecalho-linha {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.secao__resumo {
+  max-width: 76ch;
+  margin: 6px 0 14px;
+  font-size: 13px;
+  line-height: 1.55;
+  color: var(--cor-texto-fraco);
+}
+
+/* --- Cartões --------------------------------------------------------------- */
+
+.cartoes {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 10px;
+}
+
+.cartao {
+  padding: 12px 14px;
+  background: var(--cor-painel);
+  border: 1px solid var(--cor-borda);
+}
+
+.cartao__topo {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.cartao__amostra {
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  box-shadow: 0 0 10px currentColor;
+}
+
+.cartao__titulo {
+  font-size: 13px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--cor-texto-forte);
+}
+
+.cartao__resumo {
+  margin: 6px 0 0;
+  font-size: 12px;
+  color: var(--cor-destaque-suave);
+}
+
+.cartao__texto {
+  margin: 8px 0 0;
+  font-size: 13px;
+  line-height: 1.55;
+}
+
+.cartao__rodape {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  margin-top: 10px;
+  padding-top: 8px;
+  border-top: 1px solid var(--cor-borda);
+}
+
+.cartao__dado {
+  font-family: var(--fonte-mono);
+  font-size: 11px;
+  color: var(--cor-texto);
+}
+
+/* --- Métricas e faixas ----------------------------------------------------- */
+
+.metrica {
+  padding: 14px 16px;
+  margin-bottom: 12px;
+  background: var(--cor-painel);
+  border: 1px solid var(--cor-borda);
+}
+
+.faixas {
+  margin-top: 12px;
+  border-top: 1px solid var(--cor-borda);
+}
+
+.faixa {
+  display: grid;
+  grid-template-columns: 72px 110px 1fr;
+  gap: 12px;
+  align-items: baseline;
+  padding: 7px 0;
+  border-bottom: 1px solid rgba(44, 70, 52, 0.4);
+  font-size: 13px;
+}
+
+.faixa__intervalo {
+  font-family: var(--fonte-mono);
+  font-size: 11px;
+  color: var(--cor-texto-fraco);
+}
+
+.faixa__nome {
+  font-family: var(--fonte-mono);
+  font-size: 11px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--cor-destaque);
+}
+
+.faixa__descricao {
+  line-height: 1.45;
+}
+
+/* --- Administração --------------------------------------------------------- */
+
+.admin .secao {
+  margin-bottom: 40px;
+}
+
+.registro {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 12px;
+  margin-bottom: 6px;
+  background: var(--cor-painel);
+  border: 1px solid var(--cor-borda);
+}
+
+.registro__cor {
+  flex: none;
+  width: 14px;
+  height: 28px;
+  border: 1px solid var(--cor-borda-forte);
+}
+
+.registro__texto {
+  flex: 1;
+  min-width: 0;
+}
+
+.registro__nome {
+  font-family: var(--fonte-mono);
+  font-size: 12px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--cor-texto-forte);
+}
+
+.registro__detalhe {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 14px;
+  margin-top: 3px;
+  font-size: 12px;
+  color: var(--cor-texto-fraco);
+}
+
+.registro__acoes {
+  display: flex;
+  gap: 6px;
+}
+
+.vazio {
+  padding: 18px 0;
+  font-family: var(--fonte-mono);
+  font-size: 11px;
+  color: var(--cor-texto-fraco);
+  text-align: center;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+/* Diálogos e avisos são compartilhados com o mapa. */
+.dialogo-fundo {
+  position: fixed;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(2, 4, 5, 0.72);
+  z-index: 60;
+}
+
+.dialogo-fundo[hidden] {
+  display: none;
+}
+
+.dialogo {
+  width: min(460px, 92vw);
+  max-height: 86vh;
+  display: flex;
+  flex-direction: column;
+}
+
+.dialogo__topo {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 14px;
+  border-bottom: 1px solid var(--cor-borda);
+}
+
+.dialogo__titulo {
+  font-family: var(--fonte-mono);
+  font-size: 12px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--cor-texto-forte);
+}
+
+.dialogo__corpo {
+  padding: 14px;
+  overflow-y: auto;
+}
+
+.dialogo__acoes {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  padding: 12px 14px;
+  border-top: 1px solid var(--cor-borda);
+}
+
+.dialogo__mensagem {
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.dialogo__impacto {
+  margin: 12px 0 0;
+  padding: 10px;
+  font-family: var(--fonte-mono);
+  font-size: 11px;
+  line-height: 1.5;
+  color: var(--cor-alerta);
+  border: 1px solid rgba(232, 177, 58, 0.35);
+  background: rgba(232, 177, 58, 0.06);
+}
+
+.painel-sistema__fechar {
+  font-size: 16px;
+  line-height: 1;
+  color: var(--cor-texto-fraco);
+}
+
+.avisos {
+  position: fixed;
+  top: 62px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  z-index: 70;
+  pointer-events: none;
+}
+
+.aviso-flutuante {
+  padding: 8px 14px;
+  font-family: var(--fonte-mono);
+  font-size: 11px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--cor-texto-forte);
+  background: var(--cor-painel-claro);
+  border: 1px solid var(--cor-borda-forte);
+}
+
+.aviso-flutuante--erro {
+  color: var(--cor-perigo);
+  border-color: rgba(224, 87, 74, 0.6);
+}
+
+.aviso-flutuante--sucesso {
+  color: var(--cor-sucesso);
+  border-color: rgba(111, 208, 140, 0.5);
+}
+
+.campo__linha {
+  display: flex;
+  gap: 6px;
+}
+
+.campo__linha input {
+  flex: 1;
+}
+
+.grade-dupla {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}

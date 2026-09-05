@@ -17,12 +17,14 @@ def indice():
     conn = get_db()
     rows = conn.execute(
         """
-        SELECT s.id, s.name, s.region_id, s.population, s.star_count,
+        SELECT s.id, s.name, s.region_id, s.population,
                s.is_classified, s.economy, s.industry, s.innovation,
                s.information, s.stability, s.quality_of_life,
                r.name AS region_name,
                f.id AS faction_id, f.name AS faction_name,
                f.short_name AS faction_short_name, f.color_hex AS faction_color,
+               (SELECT COUNT(*) FROM celestial_body b
+                 WHERE b.system_id = s.id AND b.body_type = 'star')    AS star_count,
                (SELECT COUNT(*) FROM celestial_body b
                  WHERE b.system_id = s.id AND b.body_type = 'planet')  AS planets,
                (SELECT COUNT(*) FROM celestial_body b

@@ -15,16 +15,26 @@ Toda a interface é em português brasileiro.
   geopolítica (mosaico colorido por facção, com legenda). A escolha fica salva
   no navegador.
 - **Busca de sistemas** com sugestões e centralização no mapa.
-- **Painel do sistema** em três abas — Visão Geral (aviso, estatísticas, mapa
-  orbital), Sistema (corpos celestes com tags, luas aninhadas) e Geopolítica
+- **Painel do sistema** em três abas — Visão Geral (aviso, estatísticas, mapa do
+  sistema), Sistema (corpos celestes com tags, luas aninhadas) e Geopolítica
   (população, equilíbrio de poder, medidores por facção; sistemas classificados
   aparecem como "Acesso restrito").
+- **Mapa do sistema** com a hierarquia real: múltiplas estrelas em torno do
+  baricentro, planetas na órbita de cada uma, luas aninhadas. O nome do corpo
+  aparece ao passar o mouse, e clicar abre a ficha dele.
 - **Modo editor**: criar sistema clicando no mapa, arrastar para reposicionar,
   ligar dois sistemas com a ferramenta de rota, editar campos no painel lateral,
   gerenciar corpos celestes e influências, excluir com aviso de impacto em
   cascata.
+- **Geração aleatória**: sorteio de nome, de população e métricas coerentes
+  entre si, e geração de um sistema inteiro de corpos que respeita a zona
+  habitável da estrela.
 - **Índice de Sistemas**: tabela com todas as métricas, filtro por texto, chips
   de facção, ordenação por coluna e agrupamento por região.
+- **Glossário** (`/glossario`): classes de estrela, tipos de corpo e de rota,
+  níveis de região e o significado de cada faixa das seis métricas.
+- **Regiões e facções** (`/administracao`): criar, editar e excluir, com aviso do
+  que a exclusão afeta.
 
 Boletins, Procurados, Registro de Corsários e Rastreador de Conflitos ficaram
 para fases seguintes — a arquitetura já reserva o encaixe deles.

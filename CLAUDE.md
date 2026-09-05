@@ -15,6 +15,18 @@
 - Migrations são arquivos SQL numerados em `backend/migrations/`, aplicados na
   subida do app pelo runner `backend/migrate.py`.
 
+### Dois pontos de arquitetura que não são óbvios
+
+- **Estrelas são corpos celestes** (`body_type='star'`, com `star_class`), não
+  colunas do sistema. É o que permite binários e trinários e a hierarquia do
+  diagrama. As colunas `star_system.star_count`/`star_type` são legado morto:
+  não leia nem escreva nelas — conte a partir de `celestial_body`.
+- **`backend/modules/catalog/dados.py` é a fonte única** de tudo que é
+  enumerado: classes de estrela, tipos de corpo e de rota, níveis de região,
+  métricas e suas faixas. Alimenta ao mesmo tempo os dropdowns, a validação e a
+  página de Glossário. Acrescentar um tipo novo é editar esse arquivo — nunca
+  duplicar a lista no frontend.
+
 ## Comandos de teste — **rode antes de declarar uma feature pronta**
 
 | Suíte | Comando |
@@ -27,7 +39,13 @@ As suítes JS exigem **Node 18+**. Se o Node da máquina for mais antigo, diga
 isso em vez de silenciar a suíte.
 
 Servidor de desenvolvimento: `.venv/Scripts/python.exe wsgi.py` (porta 5173).
-Cenário de exemplo: `.venv/Scripts/python.exe -m backend.seed`.
+O reload automático **está desligado** (FLASK_DEBUG=0 por padrão): reinicie o
+servidor depois de mexer no backend, ou o navegador vai bater em código velho.
+
+Cenário de exemplo: `.venv/Scripts/python.exe -m backend.seed`. **O seed apaga o
+banco** — ele se recusa a rodar se houver sistemas criados à mão e só passa por
+cima com `--forcar`. Nunca rode contra `data/starmap.db` sem checar antes o que
+existe lá.
 
 ## Idioma — regra que vale para tudo
 

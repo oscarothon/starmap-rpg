@@ -36,7 +36,10 @@ test("mostra corpos celestes e geopolítica de Sol", async ({ page }) => {
 
   await painel.locator('[data-aba="geopolitica"]').click();
   await expect(painel.locator(".equilibrio__fatia")).toHaveCount(2);
-  await expect(painel.locator(".medidor")).toContainText(["Habitantes estimados"]);
+  // A população aparece só como número e faixa — sem barra de medidor.
+  await expect(painel.locator(".populacao__valor")).toHaveText("14 bi");
+  await expect(painel.locator(".populacao")).toContainText("Metrópole estelar");
+  await expect(painel.locator(".medidor")).toHaveCount(2); // um por facção
 });
 
 test("esconde a geopolítica de um sistema classificado", async ({ page }) => {

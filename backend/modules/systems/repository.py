@@ -1,11 +1,13 @@
 """Sistemas estelares, corpos celestes e influência de facções."""
 
 from ...db import row_to_dict
+from ..catalog.dados import CLASSES_DE_ESTRELA, TIPOS_DE_CORPO, codigos, por_codigo
 from ..core import validation as v
 from ..core.repository import Table
 from ..regions.repository import REGIONS, breadcrumb
 
-BODY_TYPES = ("planet", "moon", "station", "belt", "star", "anomaly")
+BODY_TYPES = codigos(TIPOS_DE_CORPO)
+STAR_CLASSES = codigos(CLASSES_DE_ESTRELA)
 TRENDS = ("rising", "falling", "steady")
 METRICS = ("economy", "industry", "innovation", "information", "stability", "quality_of_life")
 
@@ -16,8 +18,6 @@ SYSTEMS = Table(
         "region_id",
         "x",
         "y",
-        "star_type",
-        "star_count",
         "lore_text",
         "notice_text",
         "sovereign_faction_id",
@@ -36,6 +36,7 @@ BODIES = Table(
         "parent_body_id",
         "name",
         "body_type",
+        "star_class",
         "orbital_order",
         "orbital_radius_au",
         "is_colonized",
@@ -56,8 +57,6 @@ SYSTEM_FIELDS = (
     ("region_id", v.reference, {"default": None}),
     ("x", v.number, {"default": 0, "minimum": -LIMITE_COORDENADA, "maximum": LIMITE_COORDENADA}),
     ("y", v.number, {"default": 0, "minimum": -LIMITE_COORDENADA, "maximum": LIMITE_COORDENADA}),
-    ("star_type", v.text, {"default": "", "allow_empty": True, "max_length": 80}),
-    ("star_count", v.integer, {"default": 1, "minimum": 1, "maximum": 12}),
     ("lore_text", v.text, {"default": "", "allow_empty": True, "max_length": v.TEXTO_LONGO}),
     ("notice_text", v.text, {"default": "", "allow_empty": True, "max_length": v.TEXTO_MEDIO}),
     ("sovereign_faction_id", v.reference, {"default": None}),
@@ -69,6 +68,8 @@ SYSTEM_FIELDS = (
 BODY_FIELDS = (
     ("name", v.text, {"max_length": v.TEXTO_CURTO}),
     ("body_type", v.choice, {"options": BODY_TYPES, "default": "planet"}),
+    # Só faz sentido em body_type='star'; vazio nos demais.
+    ("star_class", v.choice, {"options": (*STAR_CLASSES, ""), "default": ""}),
     ("parent_body_id", v.reference, {"default": None}),
     ("orbital_order", v.integer, {"default": 0, "minimum": -999, "maximum": 999}),
     ("orbital_radius_au", v.number, {"default": None, "minimum": 0, "maximum": 1_000_000}),
@@ -100,6 +101,44 @@ def tags_of(conn, body_ids):
     return grouped
 
 
+def insert_body_tree(conn, system_id, corpos, parent_body_id=None):
+    """Grava uma árvore de corpos (com `tags` e `filhos`) e devolve quantos criou.
+
+    Usado pela geração aleatória: recebe a proposta pronta e persiste de uma vez,
+    mantendo a hierarquia entre planeta e luas.
+    """
+    total = 0
+    for corpo in corpos:
+        valores = {
+            "system_id": system_id,
+            "parent_body_id": parent_body_id,
+            "name": corpo["name"],
+            "body_type": corpo.get("body_type", "planet"),
+            "star_class": corpo.get("star_class", ""),
+            "orbital_order": corpo.get("orbital_order", 0),
+            "orbital_radius_au": corpo.get("orbital_radius_au"),
+            "is_colonized": corpo.get("is_colonized", 0),
+            "description": corpo.get("description", ""),
+            "colony_notes": corpo.get("colony_notes", ""),
+        }
+        body_id = BODIES.insert(conn, valores)
+        total += 1
+
+        if corpo.get("tags"):
+            replace_tags(conn, body_id, corpo["tags"])
+        if corpo.get("filhos"):
+            total += insert_body_tree(conn, system_id, corpo["filhos"], body_id)
+    return total
+
+
+def delete_bodies_of(conn, system_id, incluir_estrelas=False):
+    """Apaga os corpos do sistema. As tags somem por cascata do banco."""
+    sql = "DELETE FROM celestial_body WHERE system_id = ?"
+    if not incluir_estrelas:
+        sql += " AND body_type <> 'star'"
+    conn.execute(sql, (system_id,))
+
+
 def replace_tags(conn, body_id, tags):
     conn.execute("DELETE FROM celestial_body_tag WHERE body_id = ?", (body_id,))
     for tag in dict.fromkeys(tag.strip() for tag in tags if tag and tag.strip()):
@@ -110,9 +149,18 @@ def replace_tags(conn, body_id, tags):
 
 
 def bodies_of(conn, system_id):
-    """Corpos do sistema em árvore (luas aninhadas sob o planeta)."""
+    """Corpos do sistema em árvore, estrelas primeiro.
+
+    Quem tem parent_body_id orbita aquele corpo; quem não tem orbita o centro
+    do sistema. As luas aparecem aninhadas sob o planeta, e os planetas sob a
+    estrela que orbitam.
+    """
     rows = conn.execute(
-        "SELECT * FROM celestial_body WHERE system_id = ? ORDER BY orbital_order, id",
+        """
+        SELECT * FROM celestial_body
+        WHERE system_id = ?
+        ORDER BY CASE WHEN body_type = 'star' THEN 0 ELSE 1 END, orbital_order, id
+        """,
         (system_id,),
     ).fetchall()
     tags = tags_of(conn, [row["id"] for row in rows])
@@ -129,20 +177,28 @@ def bodies_of(conn, system_id):
 
 
 def body_counts(conn, system_id):
-    """Contadores exibidos nas abas Visão Geral e Sistema."""
+    """Contadores exibidos nas abas Visão Geral e Sistema.
+
+    `bodies` não conta as estrelas: elas são o sistema, não um corpo em órbita.
+    """
     row = conn.execute(
         """
         SELECT
-            COUNT(*)                                                   AS bodies,
+            SUM(CASE WHEN body_type <> 'star'   THEN 1 ELSE 0 END)     AS bodies,
+            SUM(CASE WHEN body_type = 'star'    THEN 1 ELSE 0 END)     AS stars,
             SUM(CASE WHEN body_type = 'planet'  THEN 1 ELSE 0 END)     AS planets,
             SUM(CASE WHEN body_type = 'moon'    THEN 1 ELSE 0 END)     AS satellites,
             SUM(CASE WHEN body_type = 'station' THEN 1 ELSE 0 END)     AS stations,
+            SUM(CASE WHEN body_type = 'belt'    THEN 1 ELSE 0 END)     AS belts,
             SUM(CASE WHEN is_colonized = 1      THEN 1 ELSE 0 END)     AS colonized
         FROM celestial_body WHERE system_id = ?
         """,
         (system_id,),
     ).fetchone()
-    counts = {key: (row[key] or 0) for key in ("bodies", "planets", "satellites", "stations", "colonized")}
+    counts = {
+        key: (row[key] or 0)
+        for key in ("bodies", "stars", "planets", "satellites", "stations", "belts", "colonized")
+    }
     counts["lanes"] = conn.execute(
         "SELECT COUNT(*) AS total FROM lane WHERE system_a_id = ? OR system_b_id = ?",
         (system_id, system_id),
@@ -151,7 +207,11 @@ def body_counts(conn, system_id):
 
 
 def validate_body_parent(conn, system_id, body_id, parent_body_id):
-    """A lua precisa orbitar um corpo do mesmo sistema, sem ciclos."""
+    """O corpo orbitado precisa ser do mesmo sistema, sem formar ciclo.
+
+    Sem `parent_body_id`, o corpo orbita o centro do sistema — que é onde ficam
+    as estrelas e, num sistema múltiplo, o baricentro delas.
+    """
     if parent_body_id is None:
         return
     if body_id is not None and parent_body_id == body_id:
@@ -232,6 +292,50 @@ def replace_influences(conn, system_id, items):
 # --- Serialização ------------------------------------------------------------
 
 
+def stars_of(conn, system_id):
+    """Estrelas do sistema, já com nome e cor da classe espectral."""
+    rows = conn.execute(
+        """
+        SELECT * FROM celestial_body
+        WHERE system_id = ? AND body_type = 'star'
+        ORDER BY orbital_order, id
+        """,
+        (system_id,),
+    ).fetchall()
+
+    estrelas = []
+    for row in rows:
+        classe = por_codigo(CLASSES_DE_ESTRELA, row["star_class"])
+        estrelas.append(
+            {
+                **row_to_dict(row),
+                "class_name": classe["nome"] if classe else "Classe desconhecida",
+                "class_color": classe["cor"] if classe else "#cfd6d0",
+                "class_summary": classe["resumo"] if classe else "",
+            }
+        )
+    return estrelas
+
+
+def describe_system(estrelas):
+    """Frase de cabeçalho: 'Sistema binário — Amarela (G) e Anã vermelha (M)'."""
+    quantidade = len(estrelas)
+    nomes = {
+        0: "Sistema sem estrela registrada",
+        1: "Sistema estelar único",
+        2: "Sistema binário",
+        3: "Sistema trinário",
+    }
+    base = nomes.get(quantidade, f"Sistema com {quantidade} estrelas")
+    if not estrelas:
+        return base
+
+    classes = [estrela["class_name"] for estrela in estrelas]
+    if quantidade == 1:
+        return f"{base} — {classes[0]}"
+    return f"{base} — {', '.join(classes[:-1])} e {classes[-1]}"
+
+
 def summary(conn, row):
     """Forma enxuta usada no mapa e nas listagens."""
     data = row_to_dict(row)
@@ -248,6 +352,8 @@ def detail(conn, row):
     data["region_path"] = breadcrumb(conn, row["region_id"])
     data["counts"] = body_counts(conn, system_id)
     data["bodies"] = bodies_of(conn, system_id)
+    data["stars"] = stars_of(conn, system_id)
+    data["star_summary"] = describe_system(data["stars"])
     data["influences"] = influences_of(conn, system_id)
     return data
 

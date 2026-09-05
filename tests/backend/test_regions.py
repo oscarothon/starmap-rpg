@@ -45,6 +45,15 @@ def test_arvore_aninha_regioes_filhas(client, api):
     assert [filha["name"] for filha in arvore[0]["children"]] == ["Aglomerado"]
 
 
+def test_impacto_da_exclusao_conta_sistemas_e_sub_regioes(client, api):
+    raiz = api.criar_regiao(name="Raiz").get_json()["id"]
+    api.criar_regiao(name="Filha", parent_id=raiz)
+    api.criar_sistema(region_id=raiz)
+
+    impacto = client.get(f"/api/regions/{raiz}/impact").get_json()
+    assert impacto == {"systems": 1, "subregions": 1}
+
+
 def test_excluir_regiao_desvincula_sistemas(client, api):
     regiao_id = api.criar_regiao().get_json()["id"]
     sistema_id = api.criar_sistema(region_id=regiao_id).get_json()["id"]

@@ -33,6 +33,16 @@ export const api = {
   mapa: () => requisitar("GET", "/api/map"),
   indice: () => requisitar("GET", "/api/index"),
 
+  // Catálogo (dropdowns e glossário bebem daqui)
+  catalogo: () => requisitar("GET", "/api/catalog"),
+
+  // Geração aleatória
+  proporSistema: (comNome = false) =>
+    requisitar("GET", `/api/generation/system${comNome ? "?nome=1" : ""}`),
+  proporNome: () => requisitar("GET", "/api/generation/name"),
+  gerarConteudo: (sistemaId, opcoes = {}) =>
+    requisitar("POST", `/api/generation/systems/${sistemaId}`, opcoes),
+
   // Sistemas
   listarSistemas: (busca) =>
     requisitar(
@@ -67,8 +77,10 @@ export const api = {
   criarRegiao: (dados) => requisitar("POST", "/api/regions", dados),
   atualizarRegiao: (id, dados) => requisitar("PATCH", `/api/regions/${id}`, dados),
   excluirRegiao: (id) => requisitar("DELETE", `/api/regions/${id}`),
+  impactoRegiao: (id) => requisitar("GET", `/api/regions/${id}/impact`),
   listarFaccoes: () => requisitar("GET", "/api/factions"),
   criarFaccao: (dados) => requisitar("POST", "/api/factions", dados),
   atualizarFaccao: (id, dados) => requisitar("PATCH", `/api/factions/${id}`, dados),
   excluirFaccao: (id) => requisitar("DELETE", `/api/factions/${id}`),
+  impactoFaccao: (id) => requisitar("GET", `/api/factions/${id}/impact`),
 };

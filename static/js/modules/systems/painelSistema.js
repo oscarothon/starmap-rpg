@@ -2,20 +2,19 @@
  * Painel lateral do sistema estelar.
  *
  * O mesmo componente serve leitura e edição: as abas Visão Geral / Sistema /
- * Geopolítica são montadas a partir do mesmo detalhe vindo da API, e o modo
- * editor apenas revela formulários e ações no lugar do conteúdo estático.
+ * Geopolítica são montadas a partir do detalhe vindo da API, e o modo editor
+ * revela formulários e ações no lugar do conteúdo estático.
+ *
+ * Clicar num corpo celeste — na lista ou no diagrama — abre a ficha dele, que é
+ * onde os pontos de interesse vão entrar mais adiante.
  */
 
 import { abrirDialogo, confirmar } from "../shared/dialogo.js";
-import { el, limpar, numero, populacao, svg } from "../shared/dom.js";
+import { faixaDePopulacao, nomeDaClasse, nomeDoTipoDeCorpo } from "../shared/catalogo.js";
+import { el, limpar, numero, populacao } from "../shared/dom.js";
 import { notificarErro, notificarSucesso } from "../shared/notificacoes.js";
-import {
-  METRICAS,
-  TIPOS_DE_CORPO,
-  formularioCorpo,
-  formularioInfluencias,
-  formularioSistema,
-} from "./formularios.js";
+import { CENTRO_DO_SISTEMA, METRICAS, formularioCorpo, formularioInfluencias, formularioSistema } from "./formularios.js";
+import { desenharMapaDoSistema } from "./mapaDoSistema.js";
 
 const ABAS = [
   ["visao", "Visão Geral"],
@@ -23,13 +22,12 @@ const ABAS = [
   ["geopolitica", "Geopolítica"],
 ];
 
-const NOME_TIPO_CORPO = Object.fromEntries(TIPOS_DE_CORPO);
-
 export function criarPainelSistema({ raiz, api, aoMudarDados, contexto }) {
   let sistema = null;
   let abaAtiva = "visao";
   let editando = false;
   let modoEditor = false;
+  let corpoAberto = null;
   let formularioAtual = null;
 
   const noTopo = el("div", { classe: "painel-sistema__topo" });
@@ -46,6 +44,7 @@ export function criarPainelSistema({ raiz, api, aoMudarDados, contexto }) {
     try {
       sistema = await api.obterSistema(sistemaId);
       editando = false;
+      corpoAberto = null;
       raiz.hidden = false;
       desenhar();
     } catch (erro) {
@@ -56,6 +55,7 @@ export function criarPainelSistema({ raiz, api, aoMudarDados, contexto }) {
   async function recarregar() {
     if (!sistema) return;
     sistema = await api.obterSistema(sistema.id);
+    if (corpoAberto) corpoAberto = acharCorpo(sistema.bodies, corpoAberto.id);
     desenhar();
     if (aoMudarDados) aoMudarDados();
   }
@@ -63,6 +63,7 @@ export function criarPainelSistema({ raiz, api, aoMudarDados, contexto }) {
   function fechar() {
     sistema = null;
     editando = false;
+    corpoAberto = null;
     raiz.hidden = true;
   }
 
@@ -135,6 +136,7 @@ export function criarPainelSistema({ raiz, api, aoMudarDados, contexto }) {
           onClick: () => {
             abaAtiva = id;
             editando = false;
+            corpoAberto = null;
             desenhar();
           },
         })
@@ -144,6 +146,10 @@ export function criarPainelSistema({ raiz, api, aoMudarDados, contexto }) {
 
   function desenharConteudo() {
     limpar(noConteudo);
+    if (corpoAberto) {
+      noConteudo.appendChild(fichaDoCorpo(corpoAberto));
+      return;
+    }
     if (editando) {
       noConteudo.appendChild(conteudoEdicao());
       return;
@@ -155,7 +161,7 @@ export function criarPainelSistema({ raiz, api, aoMudarDados, contexto }) {
 
   function desenharRodape() {
     limpar(noRodape);
-    noRodape.hidden = !modoEditor || editando;
+    noRodape.hidden = !modoEditor || editando || Boolean(corpoAberto);
     if (noRodape.hidden) return;
 
     noRodape.append(
@@ -183,69 +189,23 @@ export function criarPainelSistema({ raiz, api, aoMudarDados, contexto }) {
     const contagens = sistema.counts;
     return el("div", {}, [
       sistema.notice_text ? el("div", { classe: "aviso", texto: sistema.notice_text }) : null,
-      el("h2", {
-        classe: "corpo__nome",
-        texto: descricaoDoSistema(),
-      }),
+      el("h2", { classe: "corpo__nome", texto: sistema.star_summary }),
       grade([
         [numero(contagens.bodies), "Corpos"],
+        [numero(contagens.stars), "Estrelas"],
         [numero(contagens.colonized), "Colonizados"],
         [numero(contagens.lanes), "Rotas"],
-        [populacao(sistema.population), "População"],
       ]),
       el("div", { classe: "secao__titulo rotulo", texto: "Mapa do sistema" }),
-      diagramaOrbital(sistema.bodies),
+      mapaDoSistema(),
     ]);
   }
 
-  function descricaoDoSistema() {
-    const nomes = { 1: "Sistema estelar único", 2: "Sistema binário", 3: "Sistema trinário" };
-    const base = nomes[sistema.star_count] || `Sistema com ${sistema.star_count} estrelas`;
-    return sistema.star_type ? `${sistema.star_type} — ${base}` : base;
-  }
-
-  function diagramaOrbital(corpos) {
-    if (!corpos.length) {
+  function mapaDoSistema() {
+    if (!sistema.bodies.length) {
       return el("div", { classe: "vazio", texto: "Nenhum corpo celeste registrado" });
     }
-    const largura = 340;
-    const altura = 90;
-    const passo = Math.min(46, (largura - 60) / Math.max(corpos.length, 1));
-    const meio = altura / 2 + 8;
-
-    const nos = [
-      svg("line", { classe: "orbital__linha", x1: 16, y1: meio, x2: largura - 10, y2: meio }),
-      svg("circle", { classe: "orbital__estrela", cx: 16, cy: meio, r: 9 }),
-    ];
-
-    corpos.forEach((corpo, indice) => {
-      const cx = 46 + indice * passo;
-      nos.push(
-        svg("circle", {
-          classe: `orbital__corpo${corpo.is_colonized ? " orbital__corpo--colonizado" : ""}`,
-          cx,
-          cy: meio,
-          r: corpo.body_type === "belt" ? 3 : 6,
-        })
-      );
-      svgTitulo(nos[nos.length - 1], corpo.name);
-      (corpo.children || []).forEach((lua, ordem) => {
-        nos.push(
-          svg("circle", {
-            classe: "orbital__corpo",
-            cx,
-            cy: meio - 16 - ordem * 7,
-            r: 2,
-          })
-        );
-      });
-    });
-
-    return svg("svg", { classe: "orbital", viewBox: `0 0 ${largura} ${altura}` }, nos);
-  }
-
-  function svgTitulo(no, texto) {
-    no.appendChild(svg("title", { texto }));
+    return desenharMapaDoSistema(sistema, { aoEscolherCorpo: abrirCorpo });
   }
 
   // --- Aba: Sistema --------------------------------------------------------
@@ -253,22 +213,31 @@ export function criarPainelSistema({ raiz, api, aoMudarDados, contexto }) {
   function abaSistema() {
     const contagens = sistema.counts;
     return el("div", {}, [
-      el("h2", { classe: "corpo__nome", texto: descricaoDoSistema() }),
+      el("h2", { classe: "corpo__nome", texto: sistema.star_summary }),
       grade([
         [numero(contagens.planets), "Planetas"],
         [numero(contagens.satellites), "Satélites"],
         [numero(contagens.stations), "Estações"],
-        [numero(contagens.lanes), "Rotas"],
+        [numero(contagens.belts), "Cinturões"],
       ]),
-      el("div", { classe: "secao__titulo rotulo", texto: "Corpos celestes" }),
       modoEditor
-        ? el("button", {
-            classe: "botao",
-            texto: "+ Novo corpo celeste",
-            type: "button",
-            onClick: () => abrirFormularioCorpo(),
-          })
+        ? el("div", { classe: "acoes-em-linha" }, [
+            el("button", {
+              classe: "botao",
+              texto: "+ Novo corpo celeste",
+              type: "button",
+              onClick: () => abrirFormularioCorpo(),
+            }),
+            el("button", {
+              classe: "botao",
+              texto: "Gerar corpos",
+              type: "button",
+              title: "Cria estrelas e corpos plausíveis para este sistema",
+              onClick: gerarCorpos,
+            }),
+          ])
         : null,
+      el("div", { classe: "secao__titulo rotulo", texto: "Corpos celestes" }),
       listaDeCorpos(sistema.bodies),
     ]);
   }
@@ -289,21 +258,30 @@ export function criarPainelSistema({ raiz, api, aoMudarDados, contexto }) {
 
   function linhaDeCorpo(corpo, nivel) {
     const tags = corpo.tags && corpo.tags.length ? corpo.tags.join(", ") : null;
+    const legenda =
+      corpo.body_type === "star" ? nomeDaClasse(corpo.star_class) : nomeDoTipoDeCorpo(corpo.body_type);
+
     return el(
       "div",
       {
-        classe: `corpo${nivel ? " corpo--lua" : ""}${
+        classe: `corpo corpo--clicavel${nivel ? " corpo--lua" : ""}${
           corpo.is_colonized ? " corpo--colonizado" : ""
-        }`,
+        }${corpo.body_type === "star" ? " corpo--estrela" : ""}`,
+        role: "button",
+        tabindex: "0",
+        onClick: (evento) => {
+          if (evento.target.closest(".corpo__acoes")) return;
+          abrirCorpo(corpo);
+        },
+        onKeydown: (evento) => {
+          if (evento.key === "Enter") abrirCorpo(corpo);
+        },
       },
       [
         el("div", { classe: "corpo__marcador" }),
-        el("div", {}, [
+        el("div", { classe: "corpo__texto" }, [
           el("div", { classe: "corpo__nome", texto: corpo.name }),
-          el("div", {
-            classe: "corpo__tags",
-            texto: tags || NOME_TIPO_CORPO[corpo.body_type] || corpo.body_type,
-          }),
+          el("div", { classe: "corpo__tags", texto: tags || legenda }),
         ]),
         modoEditor
           ? el("div", { classe: "corpo__acoes" }, [
@@ -326,6 +304,94 @@ export function criarPainelSistema({ raiz, api, aoMudarDados, contexto }) {
     );
   }
 
+  // --- Ficha do corpo celeste ----------------------------------------------
+
+  function acharCorpo(corpos, id) {
+    for (const corpo of corpos) {
+      if (corpo.id === id) return corpo;
+      const encontrado = acharCorpo(corpo.children || [], id);
+      if (encontrado) return encontrado;
+    }
+    return null;
+  }
+
+  function abrirCorpo(corpo) {
+    corpoAberto = acharCorpo(sistema.bodies, corpo.id) || corpo;
+    desenhar();
+  }
+
+  function nomeDaOrbita(corpo) {
+    if (!corpo.parent_body_id) return CENTRO_DO_SISTEMA.replace(/—/g, "").trim();
+    const pai = acharCorpo(sistema.bodies, corpo.parent_body_id);
+    return pai ? pai.name : "corpo desconhecido";
+  }
+
+  function fichaDoCorpo(corpo) {
+    const ehEstrela = corpo.body_type === "star";
+    const classe = ehEstrela ? nomeDaClasse(corpo.star_class) : null;
+
+    return el("div", { classe: "ficha-corpo" }, [
+      el("button", {
+        classe: "botao botao--voltar",
+        type: "button",
+        texto: "← Voltar ao sistema",
+        onClick: () => {
+          corpoAberto = null;
+          desenhar();
+        },
+      }),
+      el("h2", { classe: "ficha-corpo__nome", texto: corpo.name }),
+      el("span", {
+        classe: "rotulo",
+        texto: ehEstrela ? classe : nomeDoTipoDeCorpo(corpo.body_type),
+      }),
+      corpo.tags && corpo.tags.length
+        ? el(
+            "div",
+            { classe: "ficha-corpo__tags" },
+            corpo.tags.map((tag) => el("span", { classe: "etiqueta", texto: tag }))
+          )
+        : null,
+      grade([
+        [nomeDaOrbita(corpo), "Orbita"],
+        [corpo.orbital_radius_au ? `${corpo.orbital_radius_au} UA` : "—", "Raio orbital"],
+        [numero(corpo.orbital_order), "Ordem"],
+        [corpo.is_colonized ? "Sim" : "Não", "Colonizado"],
+      ]),
+      corpo.description
+        ? el("p", { classe: "painel-sistema__lore", texto: corpo.description })
+        : null,
+      corpo.colony_notes
+        ? el("div", {}, [
+            el("div", { classe: "secao__titulo rotulo", texto: "Notas da colônia" }),
+            el("p", { classe: "painel-sistema__lore", texto: corpo.colony_notes }),
+          ])
+        : null,
+      corpo.children && corpo.children.length
+        ? el("div", {}, [
+            el("div", { classe: "secao__titulo rotulo", texto: "Em órbita deste corpo" }),
+            listaDeCorpos(corpo.children),
+          ])
+        : null,
+      modoEditor
+        ? el("div", { classe: "dialogo__acoes" }, [
+            el("button", {
+              classe: "botao",
+              texto: "Editar corpo",
+              type: "button",
+              onClick: () => abrirFormularioCorpo(corpo),
+            }),
+            el("button", {
+              classe: "botao botao--perigo",
+              texto: "Excluir",
+              type: "button",
+              onClick: () => excluirCorpo(corpo),
+            }),
+          ])
+        : null,
+    ]);
+  }
+
   // --- Aba: Geopolítica ----------------------------------------------------
 
   function abaGeopolitica() {
@@ -335,10 +401,17 @@ export function criarPainelSistema({ raiz, api, aoMudarDados, contexto }) {
 
     const influencias = sistema.influences || [];
     const total = influencias.reduce((soma, item) => soma + item.influence_value, 0);
+    const faixa = faixaDePopulacao(sistema.population);
 
     return el("div", {}, [
       el("div", { classe: "secao__titulo rotulo", texto: "População" }),
-      medidor("Habitantes estimados", populacao(sistema.population), escalaPopulacao()),
+      el("div", { classe: "populacao" }, [
+        el("span", { classe: "populacao__valor", texto: populacao(sistema.population) }),
+        el("span", {
+          classe: "rotulo",
+          texto: faixa ? faixa.nome : "Sem dado",
+        }),
+      ]),
       el("div", { classe: "secao__titulo rotulo", texto: "Equilíbrio de poder" }),
       total
         ? el(
@@ -379,12 +452,6 @@ export function criarPainelSistema({ raiz, api, aoMudarDados, contexto }) {
           })
         : null,
     ]);
-  }
-
-  function escalaPopulacao() {
-    const total = Number(sistema.population || 0);
-    if (!total) return 0;
-    return Math.min(100, (Math.log10(total) / 12) * 100);
   }
 
   function rotuloDeTendencia(tendencia) {
@@ -527,20 +594,42 @@ export function criarPainelSistema({ raiz, api, aoMudarDados, contexto }) {
   }
 
   async function excluirCorpo(corpo) {
-    const quantidadeLuas = (corpo.children || []).length;
+    const quantidadeFilhos = (corpo.children || []).length;
     const confirmado = await confirmar({
       titulo: "Excluir corpo celeste",
       mensagem: `Excluir ${corpo.name}?`,
-      impacto: quantidadeLuas
-        ? `Também serão removidos ${quantidadeLuas} corpo(s) em órbita.`
+      impacto: quantidadeFilhos
+        ? `Também serão removidos ${quantidadeFilhos} corpo(s) em órbita.`
         : null,
     });
     if (!confirmado) return;
 
     try {
       await api.excluirCorpo(sistema.id, corpo.id);
+      if (corpoAberto && corpoAberto.id === corpo.id) corpoAberto = null;
       await recarregar();
       notificarSucesso("Corpo celeste excluído.");
+    } catch (erro) {
+      notificarErro(erro);
+    }
+  }
+
+  async function gerarCorpos() {
+    const jaTemCorpos = sistema.counts.bodies > 0;
+    if (jaTemCorpos) {
+      const confirmado = await confirmar({
+        titulo: "Gerar corpos celestes",
+        mensagem: `O sistema ${sistema.name} já tem ${sistema.counts.bodies} corpo(s) em órbita.`,
+        impacto: "A geração substitui todos eles (as estrelas são mantidas).",
+        textoConfirmar: "Substituir",
+      });
+      if (!confirmado) return;
+    }
+
+    try {
+      const atualizado = await api.gerarConteudo(sistema.id, { substituir: jaTemCorpos });
+      await recarregar();
+      notificarSucesso(`${atualizado.gerados} corpo(s) gerado(s).`);
     } catch (erro) {
       notificarErro(erro);
     }

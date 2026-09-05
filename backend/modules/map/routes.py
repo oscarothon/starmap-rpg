@@ -17,11 +17,14 @@ def mapa():
 
     systems = conn.execute(
         """
-        SELECT s.id, s.name, s.x, s.y, s.star_type, s.star_count, s.region_id,
+        SELECT s.id, s.name, s.x, s.y, s.region_id,
                s.sovereign_faction_id, s.population, s.is_classified,
                f.color_hex AS faction_color, f.short_name AS faction_short_name,
                f.name AS faction_name,
-               (SELECT COUNT(*) FROM celestial_body b WHERE b.system_id = s.id) AS body_count
+               (SELECT COUNT(*) FROM celestial_body b
+                 WHERE b.system_id = s.id AND b.body_type <> 'star')  AS body_count,
+               (SELECT COUNT(*) FROM celestial_body b
+                 WHERE b.system_id = s.id AND b.body_type = 'star')   AS star_count
         FROM star_system s
         LEFT JOIN faction f ON f.id = s.sovereign_faction_id
         ORDER BY s.name
