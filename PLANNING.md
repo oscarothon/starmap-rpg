@@ -9,13 +9,20 @@ trabalho: o que ficou pronto, o que ficou pendente e o que espera decisão.
 
 ## Comece por aqui na próxima sessão
 
+**Estado:** a primeira rodada da Fase 2 foi entregue e commitada em `bf2851f`
+(nove pontos — ver "O que já está pronto"). A árvore está limpa, 243 testes
+verdes, e o usuário rodou o app depois disso: o banco de desenvolvimento já tem
+conteúdo novo criado à mão por ele (18 sistemas, 6 facções em 2026-09-05).
+
 **Foco atual: Fase 2 — refinar o que já existe.** A decisão do usuário é iterar
 e amadurecer o que está no ar antes de abrir funcionalidade nova. As decisões de
 modelo tomadas em 2026-09-05 estão registradas logo abaixo e valem para quando as
 fases seguintes começarem — não precisam ser perguntadas de novo.
 
 **A ordem de trabalho vem do usuário.** A Fase 2 tem uma lista de candidatos (ver
-"Roteiro"), mas o recorte de cada rodada é ele quem dá. Não escolher sozinho.
+"Roteiro"), mas o recorte de cada rodada é ele quem dá — ele disse
+explicitamente que avisa quando for continuar. **Não escolher sozinho, não
+começar a próxima rodada sem o recorte dele.**
 
 **Duas perguntas continuam em aberto:**
 
@@ -191,6 +198,19 @@ Fase 5  módulos de campanha (boletins, procurados, corsários, conflitos)
 Nada aqui é módulo novo: é acabamento do que a Fase 1 entregou. **A lista abaixo
 são candidatos, não uma fila aprovada** — o usuário dá o recorte de cada rodada.
 A primeira rodada (nove pontos) está em "O que já está pronto".
+
+**Observado em uso, ainda não tratado:**
+
+- **Primeira carga do mapa vem zerada logo depois de subir o servidor.** A página
+  chega antes de o Flask terminar de aplicar as migrations, e `carregarMapa`
+  falha calada: o mapa fica em "0 sistemas" até um F5. Só acontece na subida, não
+  no uso normal. Conserto provável: repetir a chamada em caso de falha no
+  `carregarMapa` (`static/js/mapa.js`), com aviso se persistir.
+- **Um teste E2E falhou uma vez em seis execuções** (`toBeVisible`), sem se
+  repetir em quatro rodadas limpas seguidas depois, e sem que o nome tenha sido
+  capturado. A suspeita é corrida na primeira carga da página — possivelmente a
+  mesma causa do item acima. Se reaparecer, capturar o nome antes de tratar como
+  ruído.
 
 **Dívida técnica anotada, sem urgência:**
 
