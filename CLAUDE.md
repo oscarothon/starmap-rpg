@@ -1,5 +1,32 @@
 # Mapa Estelar RPG — guia para o Claude Code
 
+## Continuidade entre sessões — faça isto sempre
+
+O usuário limpa o contexto entre rodadas de trabalho. Estes três arquivos são a
+única memória que atravessa o `/clear`, então mantê-los vivos é parte da tarefa,
+não burocracia.
+
+**Ao começar a sessão, antes de propor ou escrever qualquer coisa:**
+1. Leia `PLANNING.md` — é o documento canônico de progresso: o que está pronto,
+   o que falta, as perguntas em aberto e as decisões que bloqueiam publicação.
+2. Se houver perguntas na seção "Comece por aqui na próxima sessão", traga-as na
+   primeira resposta em vez de adivinhar a intenção.
+3. Confira `git log --oneline -5` e o estado da árvore: o que mudou desde a
+   última anotação.
+
+**Ao terminar um bloco de trabalho, antes de encerrar ou de o usuário limpar:**
+1. Atualize `PLANNING.md`: mova para "o que já está pronto" o que foi entregue,
+   registre decisões tomadas e substitua as perguntas respondidas pelas novas.
+2. Atualize este `CLAUDE.md` se alguma regra, comando ou decisão de arquitetura
+   mudou.
+3. Grave na memória do projeto (`memory/`) só o que **não** cabe no repositório:
+   preferências do usuário, o porquê de uma escolha, combinações de conversa.
+   O que é fato do código mora no código.
+4. Commite. Trabalho não commitado não sobrevive a um contexto limpo.
+
+Se o contexto for limpo no meio de algo — refatoração pela metade, investigação
+em curso —, isso **se perde**. Anote o estado no `PLANNING.md` antes.
+
 > Estado do projeto, decisões pendentes e próximas fases: veja `PLANNING.md`
 > (documento canônico de progresso).
 
