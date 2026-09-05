@@ -56,9 +56,16 @@ python -m venv .venv
 .venv/Scripts/python.exe wsgi.py
 ```
 
-A aplicação sobe em <http://127.0.0.1:5173>. O banco fica em `data/starmap.db`
-(configurável com a variável `DATABASE_PATH`) e as migrations são aplicadas
-sozinhas na subida.
+A aplicação sobe em <http://127.0.0.1:5173>, com quatro telas: o mapa (`/`), o
+Índice de Sistemas (`/indice`), o Glossário (`/glossario`) e a administração de
+regiões e facções (`/administracao`).
+
+O banco fica em `data/starmap.db` (configurável com `DATABASE_PATH`) e as
+migrations são aplicadas sozinhas na subida.
+
+> **`backend.seed` apaga o banco antes de recriar o cenário.** Ele se recusa a
+> rodar quando encontra sistemas criados à mão e só passa por cima com
+> `--forcar` — mas vale conferir o que existe antes de rodar.
 
 ## Configuração e segurança
 
@@ -103,25 +110,40 @@ backend/
   migrations/       SQL numerado (0001_init.sql, ...)
   modules/
     core/           validação, CRUD genérico e acesso a tabelas
+    catalog/        fonte única do conteúdo enumerado (dropdowns + glossário)
     regions/        regiões hierárquicas
     factions/       facções
     systems/        sistemas, corpos celestes e influências
     lanes/          rotas entre sistemas
     map/            endpoint agregador do mapa
     index/          endpoint do Índice de Sistemas
+    generator/      geração aleatória de sistemas e corpos
 static/
   css/              tema e telas
   js/
     mapa.js         entrada da tela do mapa
     indice.js       entrada da tela do índice
+    glossario.js    entrada do glossário
+    administracao.js entrada de regiões e facções
     modules/
       map/          câmera, camadas, renderizador, busca
-      systems/      painel lateral e formulários
+      systems/      painel lateral, diagrama do sistema e formulários
       index/        filtro, ordenação e agrupamento da tabela
       shared/       api, dom, diálogos, notificações
-templates/          map.html, index.html
+templates/          map.html, index.html, glossario.html, administracao.html
 tests/              backend (pytest), frontend (vitest), e2e (Playwright)
 ```
+
+### Duas decisões de modelo que valem saber
+
+- **Estrelas são corpos celestes** (`body_type='star'`, com `star_class`), não
+  colunas do sistema. É o que permite binários e trinários e a hierarquia do
+  diagrama: um corpo sem `parent_body_id` orbita o centro do sistema, com
+  `parent_body_id` orbita aquele corpo.
+- **`backend/modules/catalog/dados.py` é a fonte única** do conteúdo enumerado —
+  classes de estrela, tipos de corpo e de rota, níveis de região, métricas e
+  faixas. Alimenta ao mesmo tempo os dropdowns, a validação do backend e o
+  Glossário. Acrescentar um tipo novo é editar esse arquivo, e só ele.
 
 ## Acrescentar um módulo novo
 
@@ -134,8 +156,17 @@ O sistema foi montado para que features entrem e saiam sem refatoração:
    `backend/modules/__init__.py`.
 2. **Frontend** — crie `static/js/modules/<nome>/` e importe a partir da entrada
    da tela onde ele aparece.
-3. **Camada nova no mapa** — registre um objeto
+3. **Conteúdo enumerado novo** (um tipo, uma categoria, uma escala) — acrescente
+   ao catálogo em vez de espalhar listas pelo código; ele já aparece nos
+   dropdowns e no Glossário.
+4. **Camada nova no mapa** — registre um objeto
    `{ id, rotulo, visivel, desenhar, legenda }` no `LayerManager`
    (`static/js/modules/map/camadas.js`). Nada mais do mapa precisa mudar.
-4. **Testes** — `tests/backend/test_<nome>.py` para a API, vitest para lógica
+5. **Testes** — `tests/backend/test_<nome>.py` para a API, vitest para lógica
    pura e um spec Playwright se houver fluxo de usuário novo.
+
+## Estado e próximos passos
+
+`PLANNING.md` é o documento canônico de progresso: o que está pronto, as
+perguntas em aberto e as duas decisões que ainda bloqueiam publicação
+(autenticação e backup).
