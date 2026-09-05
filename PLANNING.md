@@ -9,30 +9,41 @@ trabalho: o que ficou pronto, o que ficou pendente e o que espera decisão.
 
 ## Comece por aqui na próxima sessão
 
-Quatro perguntas em aberto, para responder antes de escrever código novo. As
-duas primeiras mudam o modelo de dados; as duas últimas são ajuste de gosto.
+**Foco atual: Fase 2 — refinar o que já existe.** A decisão do usuário é iterar
+e amadurecer o que está no ar antes de abrir funcionalidade nova. As decisões de
+modelo tomadas em 2026-09-05 estão registradas logo abaixo e valem para quando as
+fases seguintes começarem — não precisam ser perguntadas de novo.
 
-**1. Pontos de interesse nos corpos celestes.** A ficha do corpo já está pronta
-para recebê-los. Eles são uma lista livre (nome, descrição, tipo) ou algo mais
-estruturado — facção dona, nível de acesso, se os jogadores já descobriram?
-A versão estruturada depende da decisão de autenticação abaixo: "o que o jogador
-já descobriu" só faz sentido se houver jogador identificado.
+**A ordem de trabalho vem do usuário.** A Fase 2 tem uma lista de candidatos (ver
+"Roteiro"), mas o recorte de cada rodada é ele quem dá. Não escolher sozinho.
 
-**2. Geração de corpos em sistemas múltiplos.** Hoje os corpos gerados orbitam o
-centro do sistema, mesmo num trinário. O gerador deve distribuir os planetas
-entre as estrelas, ou isso é decisão de ambientação que fica melhor à mão?
+**Duas perguntas continuam em aberto:**
 
-**3. Cor do sistema no mapa.** Hoje vem da facção soberana. Vale uma camada
-alternativa que colore por classe espectral da estrela principal?
+1. **Backup e persistência do banco** — a única decisão que ainda bloqueia
+   publicação (detalhada em "Decisões pendentes").
+2. **Vocabulário da geração aleatória** — as tags e descrições ("Mundo velado",
+   "Atmosfera corrosiva", os nomes sorteados) foram escritas sem referência do
+   tom da campanha. Se o clima da mesa for outro — mais militar, mais horror,
+   mais otimista —, o vocabulário fica em `backend/modules/catalog/dados.py` e em
+   `backend/modules/generator/gerador.py` e pode ser trocado inteiro. É ajuste de
+   gosto, não trava nada.
 
-**4. Vocabulário da geração aleatória.** As tags e descrições ("Mundo velado",
-"Atmosfera corrosiva", os nomes sorteados) foram escritas sem referência do tom
-da campanha. Se o clima da sua mesa for outro — mais militar, mais horror, mais
-otimista —, o vocabulário fica em `backend/modules/catalog/dados.py` e em
-`backend/modules/generator/gerador.py` e pode ser trocado inteiro.
+---
 
-Além disso, seguem em aberto as **duas decisões que bloqueiam publicação**
-(autenticação e backup) — detalhadas mais abaixo.
+## Decisões tomadas em 2026-09-05
+
+Respostas às quatro perguntas que abriram a sessão. Ficam aqui para não serem
+reabertas; o que cada uma implica está detalhado na fase correspondente.
+
+| # | Pergunta | Decisão |
+|---|---|---|
+| 1 | Modelo de acesso | **B — mestre edita; jogadores logam** para ver conteúdo restrito a eles. Exige modelo de usuários, papéis e permissão por rota. |
+| 2 | Pontos de interesse | **Estruturados + descoberta por jogador**: nome, descrição, tipo, facção dona, nível de acesso e rastreio de quem já descobriu o quê. Só faz sentido depois da Fase 3. |
+| 3 | Geração em sistemas múltiplos | **Distribuir os corpos entre as estrelas**: cada planeta ganha uma estrela hospedeira e a zona habitável passa a ser a dela. |
+| 4 | Cor do sistema no mapa | **Descartada** a camada por classe espectral. A cor continua sendo informação política (facção soberana). |
+
+A decisão 1 destrava a 2: a coluna "o que este jogador já descobriu" só existe
+se houver jogador identificado. A decisão 3 é independente e cabe na Fase 2.
 
 ---
 
@@ -118,49 +129,89 @@ sistema autoral, recuperado depois das páginas livres do arquivo SQLite.
 
 ---
 
-## Decisões pendentes — bloqueiam publicação
+## Roteiro
 
-### 1. Autenticação de mestre
+Ordem escolhida em 2026-09-05: **amadurecer o que existe antes de abrir módulo
+novo**. Autenticação vem antes dos pontos de interesse porque a descoberta por
+jogador depende de haver jogador identificado.
 
-**Situação:** a aplicação não tem autenticação nenhuma. Quem alcança o servidor
-pode criar, editar e excluir qualquer coisa via API. Hoje isso está contido
-porque o servidor escuta só em `127.0.0.1`; a trava `STARMAP_SOMENTE_LEITURA=1`
-permite publicar o mapa em modo leitura, mas não resolve edição remota.
+```
+Fase 2  refinamento do que já existe        ← em andamento
+Fase 3  autenticação (modelo B)             ← destrava publicação e a Fase 4
+Fase 4  pontos de interesse                 ← depende da Fase 3
+Fase 5  módulos de campanha (boletins, procurados, corsários, conflitos)
+```
 
-**Decisão necessária:** qual modelo de acesso a campanha precisa?
-- **A.** Mestre único autenticado edita; jogadores leem sem login (mais simples).
-- **B.** Mestre edita; jogadores fazem login para ver conteúdo restrito a eles
-  (permite segredos por jogador, exige modelo de usuários e permissões).
-- **C.** Continuar sem autenticação, editando só localmente e publicando um
-  espelho somente leitura.
+### Fase 2 — refinamento do que já existe (em andamento)
 
-**Se A ou B:** hash Argon2id com salt por usuário, cookie de sessão
-`HttpOnly` + `Secure` + `SameSite=Lax`, token CSRF nas escritas e verificação de
-autorização por rota (nunca confiar na interface esconder o botão).
+Nada aqui é módulo novo: é acabamento do que a Fase 1 entregou. **A lista abaixo
+são candidatos, não uma fila aprovada** — o usuário dá o recorte de cada rodada.
 
-### 2. Backup e persistência do banco
+**Já decidido, pronto para executar:**
 
-**Situação:** o conteúdo vive num arquivo SQLite sem backup. Em Railway/Render o
-disco é efêmero sem volume persistente — **um deploy apagaria a campanha
-inteira**. Para material autoral acumulado, o risco de perda é tão sério quanto o
-de segurança.
+- **Gerador em sistemas múltiplos** (decisão 3). Hoje `gerar_corpos` usa só
+  `estrelas[0]` e devolve todos os corpos orbitando o centro. Passa a escolher
+  uma estrela hospedeira por corpo e a calcular a zona habitável a partir dela,
+  gravando o `parent_body_id` correspondente. Mudança contida em
+  `backend/modules/generator/gerador.py` + teste com semente fixa; o diagrama do
+  sistema já sabe desenhar órbitas aninhadas.
 
-**Decisão necessária:** onde a campanha vai morar?
-- **A.** Local apenas, com rotina de backup automático do arquivo (mais simples).
-- **B.** Railway/Render com volume persistente + backup periódico para fora.
-- **C.** Migrar para Postgres gerenciado (backup do provedor; exige adaptar o
-  acesso a dados, que já está isolado nos repositórios por módulo).
+**Dívida técnica anotada, sem urgência:**
 
----
+- Limpeza das colunas legadas `star_count`/`star_type` de `star_system`.
+- Rate limiting nas escritas da API.
+- Auditoria de dependências (`pip-audit` / `npm audit`).
+- Histórico de alterações do mapa (equivalente ao "Recent Changes" da
+  referência).
 
-## Próximas fases (ordem a definir)
+**Polimento de interface:** a definir com o usuário, a partir do que incomoda ao
+usar o mapa e o editor de verdade entre as sessões.
 
-Cada módulo entra como pasta em `backend/modules/`, migration nova com tabelas
+### Fase 3 — autenticação (modelo B)
+
+Modelo escolhido: **mestre edita; jogadores logam para ver conteúdo restrito a
+eles.** Substitui a contenção atual (servidor em `127.0.0.1` +
+`STARMAP_SOMENTE_LEITURA=1`), que não resolve edição remota.
+
+Escopo previsto, seguindo as diretrizes de segurança do `CLAUDE.md`:
+
+- Migration nova com `app_user` (papel `mestre` | `jogador`, ativo/inativo) e
+  tabela de sessões do lado do servidor — guardando o **hash** do token, para que
+  vazamento do banco não entregue sessões válidas.
+- Hash de senha **Argon2id** com salt por usuário (dependência `argon2-cffi`,
+  verificada como instalável no Python 3.9 desta máquina) — nunca hash simples.
+- Cookie de sessão `HttpOnly` + `Secure` + `SameSite=Lax`; token CSRF exigido em
+  toda escrita.
+- Verificação de autorização **por rota**, no backend: esconder o botão na
+  interface não é controle de acesso.
+- Página de login em português e um comando de linha para criar o primeiro
+  mestre (sem cadastro aberto na web).
+
+**Sub-decisão que fica para o início da fase:** a leitura anônima do mapa
+continua liberada (público lê o que não é restrito) ou tudo passa a exigir login?
+Uma variável de ambiente pode cobrir os dois, mas o padrão precisa ser escolhido.
+
+### Fase 4 — pontos de interesse
+
+Depende da Fase 3. A ficha do corpo celeste já existe e está vazia esperando por
+isto; os corpos já são clicáveis na lista e no diagrama.
+
+Forma decidida: além de **nome, descrição e tipo** (tipo vindo do catálogo, como
+todo enumerado do projeto), cada ponto guarda **facção dona** e **nível de
+acesso** (público / restrito / secreto), e o sistema rastreia **o que cada
+jogador já descobriu**.
+
+Consequências de modelo: tabela de pontos com FK para `celestial_body` e para
+`faction`, mais uma tabela de descoberta ligando ponto e usuário. A filtragem por
+acesso é feita **no backend**, na serialização — um ponto secreto não pode chegar
+ao navegador do jogador nem escondido no JSON.
+
+### Fase 5 — módulos de campanha
+
+Cada um entra como pasta em `backend/modules/`, migration nova com tabelas
 referenciando as centrais por FK, e — quando aparecer no mapa — uma camada
 registrada no `LayerManager`. Nenhum exige refatoração do que já existe.
 
-- **Pontos de interesse** — o próximo passo natural, já que a ficha do corpo
-  celeste existe e está vazia. Depende da pergunta 1 lá em cima.
 - **Boletins** — feed de notícias/lore por sistema e região, com leitura e
   filtros; marcadores no mapa como camada nova.
 - **Procurados** — quadro de recompensas (piratas), com zonas de atividade
@@ -169,7 +220,32 @@ registrada no `LayerManager`. Nenhum exige refatoração do que já existe.
 - **Rastreador de Conflitos** — guerras entre facções, com barra proporcional de
   lados e destaque no mapa.
 
-Melhorias técnicas anotadas, sem urgência: rate limiting nas escritas, auditoria
-de dependências (`pip-audit` / `npm audit`), histórico de alterações do mapa
-(equivalente ao "Recent Changes" da referência) e limpeza das colunas legadas
-`star_count`/`star_type`.
+### Descartado
+
+- **Camada de cor por classe espectral** (decisão 4). A cor do sistema no mapa
+  continua vindo da facção soberana; uma segunda dimensão de cor competiria com o
+  mosaico de influência.
+
+---
+
+## Decisões pendentes
+
+### Backup e persistência do banco — bloqueia publicação
+
+**Situação:** o conteúdo vive num arquivo SQLite sem backup. Em Railway/Render o
+disco é efêmero sem volume persistente — **um deploy apagaria a campanha
+inteira**. Para material autoral acumulado, o risco de perda é tão sério quanto o
+de segurança.
+
+**Decisão necessária:** onde a campanha vai morar?
+
+- **A.** Local apenas, com rotina de backup automático do arquivo (mais simples).
+- **B.** Railway/Render com volume persistente + backup periódico para fora.
+- **C.** Migrar para Postgres gerenciado (backup do provedor; exige adaptar o
+  acesso a dados, que já está isolado nos repositórios por módulo).
+
+### Resolvida: autenticação
+
+Era a outra decisão que bloqueava publicação. Resolvida em 2026-09-05 pela
+**opção B** — ver a Fase 3. Enquanto ela não é implementada, a contenção continua
+sendo o servidor local e `STARMAP_SOMENTE_LEITURA=1` para publicar em leitura.
